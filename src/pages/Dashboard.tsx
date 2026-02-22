@@ -11,14 +11,13 @@ import {
   Zap,
   Copy,
   Check,
-  RefreshCw,
 } from "lucide-react";
 import reverLogo from "@/assets/rever-logo.png";
 import UserMenu from "@/components/UserMenu";
 import SettingsDialog from "@/components/SettingsDialog";
 
 const Dashboard = () => {
-  const { user, loading, signOut } = useAuth();
+  const { user } = useAuth();
   const [credits, setCredits] = useState<number | null>(null);
   const [planName, setPlanName] = useState<string>("Free");
   const [url, setUrl] = useState("");
@@ -35,11 +34,13 @@ const Dashboard = () => {
       .select("credits, plan_name")
       .eq("id", user.id)
       .maybeSingle();
+
     if (error) {
       console.error("Failed to fetch profile:", error);
       toast.error("Failed to load your profile. Please try refreshing.");
       return;
     }
+    
     if (data) {
       setCredits(data.credits ?? 0);
       setPlanName(data.plan_name ?? "Free");
@@ -73,15 +74,46 @@ const Dashboard = () => {
     };
   }, [user]);
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   const hasCredits = credits !== null && credits > 0;
+
+  const handleGenerate = async () => {
+    let finalUrl = url.trim();
+    
+    if (!finalUrl) {
+      toast.error("Please enter a URL");
+      return;
+    }
+
+    // Ajoute automatiquement https:// si l'utilisateur l'a oublié
+    if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+      finalUrl = 'https://' + finalUrl;
+    }
+
+    if (!hasCredits) return;
+
+    setGenerating(true);
+    setGeneratedPrompt(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-prompt", {
+        body: { url: finalUrl }, // On envoie l'URL corrigée
+      });
+      
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
+      setGeneratedPrompt(data.prompt);
+      setCredits(data.creditsRemaining);
+      toast.success("Prompt generated!");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message || "Failed to generate prompt");
+      } else {
+        toast.error("Failed to generate prompt");
+      }
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const handlePurchase50 = () => {
     const stripeUrl = import.meta.env.VITE_STRIPE_PAYMENT_URL;
@@ -90,8 +122,8 @@ const Dashboard = () => {
       return;
     }
     const params = new URLSearchParams({
-      client_reference_id: user.id,
-      prefilled_email: user.email ?? "",
+      client_reference_id: user?.id ?? "",
+      prefilled_email: user?.email ?? "",
     });
     window.location.href = `${stripeUrl}?${params.toString()}`;
   };
@@ -100,31 +132,6 @@ const Dashboard = () => {
     setRefreshing(true);
     await fetchProfile();
     setRefreshing(false);
-  };
-
-  const handleGenerate = async () => {
-    if (!url.trim()) {
-      toast.error("Please enter a URL");
-      return;
-    }
-    if (!hasCredits) return;
-
-    setGenerating(true);
-    setGeneratedPrompt(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("generate-prompt", {
-        body: { url: url.trim() },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setGeneratedPrompt(data.prompt);
-      setCredits(data.creditsRemaining);
-      toast.success("Prompt generated!");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to generate prompt");
-    } finally {
-      setGenerating(false);
-    }
   };
 
   const handleCopy = async () => {

@@ -13,6 +13,8 @@ import {
   Link as LinkIcon,
   Zap,
   ShoppingCart,
+  Copy,
+  Check,
 } from "lucide-react";
 
 const Dashboard = () => {
@@ -20,6 +22,8 @@ const Dashboard = () => {
   const [credits, setCredits] = useState<number | null>(null);
   const [url, setUrl] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -54,10 +58,29 @@ const Dashboard = () => {
     if (!hasCredits) return;
 
     setGenerating(true);
-    // Simulate generation — replace with real logic
-    await new Promise((r) => setTimeout(r, 2000));
-    toast.success("Prompt generated! (placeholder)");
-    setGenerating(false);
+    setGeneratedPrompt(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-prompt", {
+        body: { url: url.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setGeneratedPrompt(data.prompt);
+      setCredits(data.creditsRemaining);
+      toast.success("Prompt generated!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to generate prompt");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!generatedPrompt) return;
+    await navigator.clipboard.writeText(generatedPrompt);
+    setCopied(true);
+    toast.success("Copied to clipboard!");
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -149,6 +172,33 @@ const Dashboard = () => {
               </div>
             )}
           </div>
+
+          {/* Generated Prompt Result */}
+          {generatedPrompt && (
+            <div className="rounded-xl border border-border bg-card shadow-card p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  Generated Prompt
+                </h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopy}
+                  className="gap-1.5"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                  {copied ? "Copied" : "Copy"}
+                </Button>
+              </div>
+              <p className="text-foreground whitespace-pre-wrap leading-relaxed text-sm">
+                {generatedPrompt}
+              </p>
+            </div>
+          )}
         </div>
       </main>
     </div>

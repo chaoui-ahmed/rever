@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   User,
   Coins,
@@ -15,7 +15,9 @@ import {
   LogOut,
   CreditCard,
   RefreshCw,
+  Settings,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface UserMenuProps {
   credits: number | null;
@@ -25,6 +27,11 @@ interface UserMenuProps {
 
 const UserMenu = ({ credits, refreshing, onRefreshCredits }: UserMenuProps) => {
   const { user, signOut } = useAuth();
+
+  const getInitials = (email?: string | null) => {
+    if (!email) return "?";
+    return email.substring(0, 2).toUpperCase();
+  };
 
   const handlePurchase = (plan: "50" | "500") => {
     if (!user) return;
@@ -42,20 +49,43 @@ const UserMenu = ({ credits, refreshing, onRefreshCredits }: UserMenuProps) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full border border-border text-muted-foreground hover:text-foreground"
-        >
-          <User className="h-4 w-4" />
-        </Button>
+        <button className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          <Avatar className="h-9 w-9 cursor-pointer">
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+              {getInitials(user?.email)}
+            </AvatarFallback>
+          </Avatar>
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel className="font-normal">
-          <p className="text-sm font-medium text-foreground truncate">
-            {user?.email}
-          </p>
+        {/* User info */}
+        <DropdownMenuLabel className="font-normal py-3">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                {getInitials(user?.email)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <p className="text-sm font-medium text-foreground truncate">
+                {user?.email}
+              </p>
+              <p className="text-xs text-muted-foreground">Free Plan</p>
+            </div>
+          </div>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+
+        {/* Account */}
+        <DropdownMenuItem onClick={() => toast.info("Coming soon")} className="gap-2 cursor-pointer">
+          <User className="h-4 w-4" />
+          <span>My Profile</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => toast.info("Coming soon")} className="gap-2 cursor-pointer">
+          <Settings className="h-4 w-4" />
+          <span>Settings</span>
+        </DropdownMenuItem>
+
         <DropdownMenuSeparator />
 
         {/* Credits */}
@@ -80,9 +110,6 @@ const UserMenu = ({ credits, refreshing, onRefreshCredits }: UserMenuProps) => {
           </div>
         </div>
 
-        <DropdownMenuSeparator />
-
-        {/* Purchase options */}
         <DropdownMenuItem onClick={() => handlePurchase("50")} className="gap-2 cursor-pointer">
           <ShoppingCart className="h-4 w-4" />
           <span>Buy 50 Credits</span>
@@ -96,7 +123,7 @@ const UserMenu = ({ credits, refreshing, onRefreshCredits }: UserMenuProps) => {
 
         <DropdownMenuItem onClick={signOut} className="gap-2 cursor-pointer text-destructive focus:text-destructive">
           <LogOut className="h-4 w-4" />
-          <span>Sign Out</span>
+          <span>Log Out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

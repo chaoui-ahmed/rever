@@ -58,6 +58,14 @@ serve(async (req) => {
     const planName = isSubscription ? "Pro" : undefined;
 
     if (userId) {
+      if (!isValidUUID(userId)) {
+        console.error(`Invalid UUID format for client_reference_id: ${userId}`);
+        return new Response(JSON.stringify({ received: true, warning: "Invalid user ID format" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
       // Add credits
       const { error: creditError } = await supabaseAdmin.rpc("add_credits", {
         p_user_id: userId,
@@ -86,6 +94,14 @@ serve(async (req) => {
         }
       }
     } else if (customerEmail) {
+      if (!isValidEmail(customerEmail)) {
+        console.error(`Invalid email format: ${customerEmail}`);
+        return new Response(JSON.stringify({ received: true, warning: "Invalid email format" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
       const { error: creditError } = await supabaseAdmin.rpc("add_credits_by_email", {
         p_email: customerEmail,
         p_amount: creditAmount,

@@ -14,6 +14,7 @@ import {
   ShoppingCart,
   Copy,
   Check,
+  RefreshCw,
 } from "lucide-react";
 import reverLogo from "@/assets/rever-logo.png";
 
@@ -24,18 +25,42 @@ const Dashboard = () => {
   const [generating, setGenerating] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchCredits = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("credits")
+      .eq("id", user.id)
+      .single();
+    if (!error && data) setCredits(data.credits ?? 0);
+  };
 
   useEffect(() => {
     if (!user) return;
-    const fetchCredits = async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("credits")
-        .eq("id", user.id)
-        .single();
-      if (!error && data) setCredits(data.credits ?? 0);
-    };
     fetchCredits();
+
+    // Realtime listener for credit updates
+    const channel = supabase
+      .channel("credits-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          setCredits((payload.new as { credits: number }).credits ?? 0);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   if (loading) {
@@ -49,6 +74,21 @@ const Dashboard = () => {
   if (!user) return <Navigate to="/auth" replace />;
 
   const hasCredits = credits !== null && credits > 0;
+
+  const handlePurchase = () => {
+    const stripeUrl = "REPLACE_WITH_YOUR_STRIPE_LINK_URL";
+    const params = new URLSearchParams({
+      client_reference_id: user.id,
+      prefilled_email: user.email ?? "",
+    });
+    window.location.href = `${stripeUrl}?${params.toString()}`;
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchCredits();
+    setRefreshing(false);
+  };
 
   const handleGenerate = async () => {
     if (!url.trim()) {
@@ -96,7 +136,23 @@ const Dashboard = () => {
                 {credits !== null ? credits : "—"}
               </span>
               <span className="text-muted-foreground">credits</span>
+              <button
+                onClick={handleRefresh}
+                className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Refresh credits"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              </button>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePurchase}
+              className="gap-1.5 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              Buy Credits
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -155,16 +211,15 @@ const Dashboard = () => {
                   <Zap className="h-5 w-5 mr-2" />
                   Generate Prompt
                 </Button>
-                <Button
-                  variant="outline"
-                  className="w-full h-12 text-base font-semibold border-primary text-primary hover:bg-primary/10 rounded-lg"
-                  onClick={() => toast.info("Buy credits flow coming soon!")}
-                >
-                  <ShoppingCart className="h-5 w-5 mr-2" />
-                  Buy Credits
-                </Button>
                 <p className="text-center text-sm text-muted-foreground">
-                  You're out of credits. Purchase more to continue.
+                  You're out of credits.{" "}
+                  <button
+                    onClick={handlePurchase}
+                    className="text-primary underline hover:text-primary/80"
+                  >
+                    Purchase more
+                  </button>{" "}
+                  to continue.
                 </p>
               </div>
             )}

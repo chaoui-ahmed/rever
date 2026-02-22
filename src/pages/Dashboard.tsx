@@ -7,16 +7,15 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   Loader2,
-  LogOut,
   Coins,
   Link as LinkIcon,
   Zap,
-  ShoppingCart,
   Copy,
   Check,
   RefreshCw,
 } from "lucide-react";
 import reverLogo from "@/assets/rever-logo.png";
+import UserMenu from "@/components/UserMenu";
 
 const Dashboard = () => {
   const { user, loading, signOut } = useAuth();
@@ -75,7 +74,7 @@ const Dashboard = () => {
 
   const hasCredits = credits !== null && credits > 0;
 
-  const handlePurchase = () => {
+  const handlePurchase50 = () => {
     const stripeUrl = "https://buy.stripe.com/cNi5kCgI4a5XbiWbqsawo00";
     const params = new URLSearchParams({
       client_reference_id: user.id,
@@ -129,38 +128,19 @@ const Dashboard = () => {
       <header className="border-b border-border sticky top-0 z-10 bg-background">
         <div className="max-w-5xl mx-auto flex items-center justify-between px-6 h-16">
           <img src={reverLogo} alt="REVER" className="h-6" />
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-sm font-medium">
               <Coins className="h-4 w-4 text-primary" />
               <span className="text-foreground">
                 {credits !== null ? credits : "—"}
               </span>
               <span className="text-muted-foreground">credits</span>
-              <button
-                onClick={handleRefresh}
-                className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Refresh credits"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-              </button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePurchase}
-              className="gap-1.5 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              Buy Credits
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={signOut}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
+            <UserMenu
+              credits={credits}
+              refreshing={refreshing}
+              onRefreshCredits={handleRefresh}
+            />
           </div>
         </div>
       </header>
@@ -214,7 +194,7 @@ const Dashboard = () => {
                 <p className="text-center text-sm text-muted-foreground">
                   You're out of credits.{" "}
                   <button
-                    onClick={handlePurchase}
+                    onClick={handlePurchase50}
                     className="text-primary underline hover:text-primary/80"
                   >
                     Purchase more

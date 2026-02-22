@@ -4,8 +4,25 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform',
 };
+
+// Tarification interne
+const COST_PER_SCREENSHOT = 50;
+const COST_PER_1000_INPUT_TOKENS = 3;
+const COST_PER_1000_OUTPUT_TOKENS = 15;
+const MINIMUM_CREDITS_REQUIRED = 100;
+
+// Fonction pour transformer l'image en Base64 (exigence d'Anthropic)
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -13,131 +30,56 @@ serve(async (req) => {
   }
 
   try {
-    // 1) Verify JWT
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
-
-    const supabaseAuth = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const supabaseAdmin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const supabaseAuth = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authHeader } } });
 
     const token = authHeader.replace('Bearer ', '');
     const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
     }
     const userId = claimsData.claims.sub as string;
 
-    // 2) Parse & validate URL input
     const body = await req.json();
     const url = body?.url;
-    if (!url || typeof url !== 'string' || url.length > 2048) {
-      return new Response(JSON.stringify({ error: 'A valid URL is required (max 2048 chars)' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (!url || typeof url !== 'string') {
+      return new Response(JSON.stringify({ error: 'Valid URL required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
     }
 
-    let parsedUrl: URL;
-    try {
-      parsedUrl = new URL(url);
-    } catch {
-      return new Response(JSON.stringify({ error: 'Invalid URL format' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      return new Response(JSON.stringify({ error: 'Only http and https URLs are allowed' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const hostname = parsedUrl.hostname;
-    if (
-      hostname === 'localhost' ||
-      hostname.endsWith('.local') ||
-      /^(127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|169\.254\.|0\.)/.test(hostname) ||
-      hostname === '[::1]'
-    ) {
-      return new Response(JSON.stringify({ error: 'Internal or local URLs are not allowed' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // 3) Atomically deduct 1 credit (check + deduct in one step)
-    const { data: remainingCredits, error: deductError } = await supabaseAdmin.rpc('deduct_credit', { user_id: userId });
-    if (deductError || remainingCredits === null || remainingCredits < 0) {
-      return new Response(JSON.stringify({ error: 'No credits remaining' }), {
+    const { data: profile } = await supabaseAdmin.from('profiles').select('credits').eq('id', userId).single();
+    if (!profile || profile.credits < MINIMUM_CREDITS_REQUIRED) {
+      return new Response(JSON.stringify({ error: `Pas assez de crédits (Minimum ${MINIMUM_CREDITS_REQUIRED} requis)` }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // 4) Call ScreenshotAPI.net to get a screenshot of the URL
+    // 1) Demander le Screenshot (output: 'json' pour ne pas faire planter la lecture)
     const screenshotApiKey = Deno.env.get('SCREENSHOT_API_KEY');
-    if (!screenshotApiKey) {
-      await supabaseAdmin.rpc('refund_credit', { user_id: userId });
-      return new Response(JSON.stringify({ error: 'Screenshot API not configured' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    if (!screenshotApiKey) throw new Error("Clé ScreenshotAPI manquante");
 
-    const screenshotParams = new URLSearchParams({
-      token: screenshotApiKey,
-      url: parsedUrl.href,
-      output: 'image',
-      file_type: 'png',
-      wait_for_event: 'load',
-      full_page: 'true',
-    });
-    const screenshotUrl = `https://shot.screenshotapi.net/screenshot?${screenshotParams.toString()}`;
-
-    const screenshotResponse = await fetch(screenshotUrl);
-    if (!screenshotResponse.ok) {
-      await supabaseAdmin.rpc('refund_credit', { user_id: userId });
-      return new Response(JSON.stringify({ error: 'Failed to capture screenshot' }), {
-        status: 502,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
+    const screenshotParams = new URLSearchParams({ token: screenshotApiKey, url: url, output: 'json', file_type: 'png', wait_for_event: 'load', full_page: 'true' });
+    const screenshotResponse = await fetch(`https://shot.screenshotapi.net/screenshot?${screenshotParams.toString()}`);
     const screenshotData = await screenshotResponse.json();
     const imageUrl = screenshotData?.screenshot;
+    
     if (!imageUrl) {
-      await supabaseAdmin.rpc('refund_credit', { user_id: userId });
-      return new Response(JSON.stringify({ error: 'Screenshot API returned no image' }), {
-        status: 502,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(JSON.stringify({ error: 'Échec de la capture d\'écran' }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
     }
 
-    // 5) Send the screenshot to Anthropic Claude 3.5 Sonnet to reverse-engineer the UI
+    // 2) Télécharger l'image et la convertir en Base64
+    const imageRes = await fetch(imageUrl);
+    const imageBuffer = await imageRes.arrayBuffer();
+    const base64Image = arrayBufferToBase64(imageBuffer);
+
+    // 3) Appel Anthropic Claude
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!anthropicApiKey) {
-      await supabaseAdmin.rpc('refund_credit', { user_id: userId });
-      return new Response(JSON.stringify({ error: 'Anthropic API not configured' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    if (!anthropicApiKey) throw new Error("Clé Anthropic manquante");
 
     const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -147,57 +89,56 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-3-5-sonnet-20240620',
         max_tokens: 4096,
-        system: `You are an expert UI/UX reverse-engineer. Given a screenshot of a website, produce a detailed, actionable prompt that a developer could paste into Lovable or v0 to recreate the UI faithfully. Include:
-- Overall layout structure (grid, flex, sections)
-- Color palette with exact hex/HSL values where possible
-- Typography (font sizes, weights, families)
-- Component breakdown (navbar, hero, cards, footer, etc.)
-- Spacing, padding, and margin patterns
-- Interactive elements (buttons, inputs, hover states)
-- Responsive design considerations
-Return ONLY the prompt text, no commentary or preamble.`,
-        messages: [
-          {
+        system: "You are an expert UI/UX reverse-engineer. Given a screenshot of a website, produce a detailed, actionable prompt that a developer could paste into Lovable or v0 to recreate the UI faithfully. Return ONLY the prompt text.",
+        messages: [{
             role: 'user',
             content: [
-              {
-                type: 'image',
-                source: {
-                  type: 'url',
-                  url: imageUrl,
-                },
+              { 
+                type: 'image', 
+                source: { 
+                  type: 'base64', 
+                  media_type: 'image/png', 
+                  data: base64Image 
+                } 
               },
-              {
-                type: 'text',
-                text: `Reverse-engineer this screenshot from ${parsedUrl.href} into a detailed Lovable/v0 prompt that would recreate this UI.`,
-              },
-            ],
-          },
-        ],
+              { type: 'text', text: `Reverse-engineer this UI.` }
+            ]
+        }],
       }),
     });
 
     const anthropicData = await anthropicResponse.json();
-
     if (!anthropicResponse.ok || !anthropicData?.content?.[0]?.text) {
-      await supabaseAdmin.rpc('refund_credit', { user_id: userId });
-      const errorMsg = anthropicData?.error?.message || 'AI generation failed';
-      return new Response(JSON.stringify({ error: `AI generation failed: ${errorMsg}. Credit refunded.` }), {
-        status: 502,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      const errorMsg = anthropicData?.error?.message || 'Génération IA échouée';
+      return new Response(JSON.stringify({ error: `Erreur Claude: ${errorMsg}` }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
     }
 
     const prompt = anthropicData.content[0].text;
 
-    // 6) Return the generated prompt
-    return new Response(JSON.stringify({ prompt, creditsRemaining: remainingCredits }), {
+    // 4) Calcul des coûts
+    const inputTokens = anthropicData.usage?.input_tokens || 0;
+    const outputTokens = anthropicData.usage?.output_tokens || 0;
+
+    const claudeCost = ((inputTokens / 1000) * COST_PER_1000_INPUT_TOKENS) + ((outputTokens / 1000) * COST_PER_1000_OUTPUT_TOKENS);
+    const totalCost = Math.ceil(COST_PER_SCREENSHOT + claudeCost);
+
+    // 5) Déduction
+    await supabaseAdmin.rpc('add_credits', { 
+      p_user_id: userId, 
+      p_amount: -totalCost 
+    });
+
+    const creditsRemaining = profile.credits - totalCost;
+
+    return new Response(JSON.stringify({ prompt, creditsRemaining, costDetail: { totalCost, inputTokens, outputTokens } }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Erreur interne du serveur';
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

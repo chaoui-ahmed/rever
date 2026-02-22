@@ -5,7 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import reverIcon from "@/assets/rever-icon.png";
 
 const Auth = () => {
   const { session, loading } = useAuth();
@@ -53,9 +54,8 @@ const Auth = () => {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary mb-4">
-            <Sparkles className="h-4 w-4" />
-            PromptForge
+          <div className="flex justify-center mb-6">
+            <img src={reverIcon} alt="REVER" className="h-12 w-12" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             {isLogin ? "Welcome back" : "Create account"}
@@ -90,7 +90,7 @@ const Auth = () => {
           <Button
             type="submit"
             disabled={submitting}
-            className="w-full h-12 gradient-primary text-primary-foreground font-semibold shadow-glow hover:opacity-90 transition-opacity"
+            className="w-full h-12 bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
           >
             {submitting ? (
               <Loader2 className="h-5 w-5 animate-spin" />

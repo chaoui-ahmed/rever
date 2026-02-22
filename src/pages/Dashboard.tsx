@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   Loader2,
-  Sparkles,
   LogOut,
   Coins,
   Link as LinkIcon,
@@ -16,6 +15,7 @@ import {
   Copy,
   Check,
 } from "lucide-react";
+import reverLogo from "@/assets/rever-logo.png";
 
 const Dashboard = () => {
   const { user, loading, signOut } = useAuth();
@@ -86,12 +86,9 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-border sticky top-0 z-10 bg-background">
         <div className="max-w-5xl mx-auto flex items-center justify-between px-6 h-16">
-          <div className="flex items-center gap-2 font-semibold text-foreground">
-            <Sparkles className="h-5 w-5 text-primary" />
-            PromptForge
-          </div>
+          <img src={reverLogo} alt="REVER" className="h-6" />
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-sm font-medium">
               <Coins className="h-4 w-4 text-primary" />
@@ -132,7 +129,7 @@ const Dashboard = () => {
                 placeholder="https://example.com"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="h-14 pl-12 pr-4 text-base bg-card border-border shadow-card rounded-xl"
+                className="h-14 pl-12 pr-4 text-base bg-card border-border rounded-lg"
               />
             </div>
 
@@ -140,7 +137,7 @@ const Dashboard = () => {
               <Button
                 onClick={handleGenerate}
                 disabled={generating}
-                className="w-full h-14 text-base font-semibold gradient-primary text-primary-foreground shadow-glow hover:opacity-90 transition-opacity rounded-xl"
+                className="w-full h-14 text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-lg"
               >
                 {generating ? (
                   <Loader2 className="h-5 w-5 animate-spin mr-2" />
@@ -153,14 +150,14 @@ const Dashboard = () => {
               <div className="space-y-3">
                 <Button
                   disabled
-                  className="w-full h-14 text-base font-semibold rounded-xl opacity-50"
+                  className="w-full h-14 text-base font-semibold rounded-lg opacity-50"
                 >
                   <Zap className="h-5 w-5 mr-2" />
                   Generate Prompt
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full h-12 text-base font-semibold border-primary text-primary hover:bg-primary/10 rounded-xl"
+                  className="w-full h-12 text-base font-semibold border-primary text-primary hover:bg-primary/10 rounded-lg"
                   onClick={() => toast.info("Buy credits flow coming soon!")}
                 >
                   <ShoppingCart className="h-5 w-5 mr-2" />
@@ -175,7 +172,7 @@ const Dashboard = () => {
 
           {/* Generated Prompt Result */}
           {generatedPrompt && (
-            <div className="rounded-xl border border-border bg-card shadow-card p-6 space-y-4">
+            <div className="rounded-lg border border-border bg-card p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   Generated Prompt

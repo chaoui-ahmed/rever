@@ -40,6 +40,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_credits: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: undefined
+      }
+      add_credits_by_email: {
+        Args: { p_amount: number; p_email: string }
+        Returns: undefined
+      }
       deduct_credit: { Args: { user_id: string }; Returns: number }
       refund_credit: { Args: { user_id: string }; Returns: undefined }
     }

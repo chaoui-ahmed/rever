@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import reverLogo from "@/assets/rever-logo.png";
 import UserMenu from "@/components/UserMenu";
+import SettingsDialog from "@/components/SettingsDialog";
 
 const Dashboard = () => {
   const { user, loading, signOut } = useAuth();
@@ -25,6 +26,7 @@ const Dashboard = () => {
   const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const fetchCredits = async () => {
     if (!user) return;
@@ -140,6 +142,7 @@ const Dashboard = () => {
               credits={credits}
               refreshing={refreshing}
               onRefreshCredits={handleRefresh}
+              onOpenSettings={() => setIsSettingsOpen(true)}
             />
           </div>
         </div>
@@ -233,6 +236,11 @@ const Dashboard = () => {
           )}
         </div>
       </main>
+      <SettingsDialog
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+        credits={credits}
+      />
     </div>
   );
 };

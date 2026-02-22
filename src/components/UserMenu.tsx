@@ -17,15 +17,15 @@ import {
   RefreshCw,
   Settings,
 } from "lucide-react";
-import { toast } from "sonner";
 
 interface UserMenuProps {
   credits: number | null;
   refreshing: boolean;
   onRefreshCredits: () => void;
+  onOpenSettings: () => void;
 }
 
-const UserMenu = ({ credits, refreshing, onRefreshCredits }: UserMenuProps) => {
+const UserMenu = ({ credits, refreshing, onRefreshCredits, onOpenSettings }: UserMenuProps) => {
   const { user, signOut } = useAuth();
 
   const getInitials = (email?: string | null) => {
@@ -77,11 +77,11 @@ const UserMenu = ({ credits, refreshing, onRefreshCredits }: UserMenuProps) => {
         <DropdownMenuSeparator />
 
         {/* Account */}
-        <DropdownMenuItem onClick={() => toast.info("Coming soon")} className="gap-2 cursor-pointer">
+        <DropdownMenuItem onClick={onOpenSettings} className="gap-2 cursor-pointer">
           <User className="h-4 w-4" />
           <span>My Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => toast.info("Coming soon")} className="gap-2 cursor-pointer">
+        <DropdownMenuItem onClick={onOpenSettings} className="gap-2 cursor-pointer">
           <Settings className="h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>

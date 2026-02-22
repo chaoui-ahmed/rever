@@ -76,7 +76,7 @@ const Dashboard = () => {
   const hasCredits = credits !== null && credits > 0;
 
   const handlePurchase = () => {
-    const stripeUrl = "REPLACE_WITH_YOUR_STRIPE_LINK_URL";
+    const stripeUrl = "https://buy.stripe.com/cNi5kCgI4a5XbiWbqsawo00";
     const params = new URLSearchParams({
       client_reference_id: user.id,
       prefilled_email: user.email ?? "",

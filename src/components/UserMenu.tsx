@@ -23,9 +23,10 @@ interface UserMenuProps {
   refreshing: boolean;
   onRefreshCredits: () => void;
   onOpenSettings: () => void;
+  planName: string;
 }
 
-const UserMenu = ({ credits, refreshing, onRefreshCredits, onOpenSettings }: UserMenuProps) => {
+const UserMenu = ({ credits, refreshing, onRefreshCredits, onOpenSettings, planName }: UserMenuProps) => {
   const { user, signOut } = useAuth();
 
   const getInitials = (email?: string | null) => {
@@ -70,7 +71,7 @@ const UserMenu = ({ credits, refreshing, onRefreshCredits, onOpenSettings }: Use
               <p className="text-sm font-medium text-foreground truncate">
                 {user?.email}
               </p>
-              <p className="text-xs text-muted-foreground">Free Plan</p>
+              <p className="text-xs text-muted-foreground">{planName} Plan</p>
             </div>
           </div>
         </DropdownMenuLabel>

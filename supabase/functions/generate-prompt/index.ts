@@ -13,34 +13,37 @@ serve(async (req) => {
   }
 
   try {
+    // 1) Verify JWT
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Missing authorization' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
-
-    // Get user from token
-    const anonClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    const { data: { user }, error: userError } = await anonClient.auth.getUser();
-    if (userError || !user) {
+    if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
 
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userId = claimsData.claims.sub as string;
+
+    // 2) Parse & validate URL input
     const body = await req.json();
     const url = body?.url;
     if (!url || typeof url !== 'string' || url.length > 2048) {
@@ -50,7 +53,6 @@ serve(async (req) => {
       });
     }
 
-    // Validate URL format and block internal addresses
     let parsedUrl: URL;
     try {
       parsedUrl = new URL(url);
@@ -79,56 +81,123 @@ serve(async (req) => {
       });
     }
 
-    // Atomically deduct 1 credit (prevents race conditions)
-    const { data: updatedProfile, error: deductError } = await supabase.rpc('deduct_credit', { user_id: user.id });
-
-    if (deductError || !updatedProfile || updatedProfile < 0) {
+    // 3) Atomically deduct 1 credit (check + deduct in one step)
+    const { data: remainingCredits, error: deductError } = await supabaseAdmin.rpc('deduct_credit', { user_id: userId });
+    if (deductError || remainingCredits === null || remainingCredits < 0) {
       return new Response(JSON.stringify({ error: 'No credits remaining' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Generate prompt using AI gateway
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.0-flash-001',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert prompt engineer. Given a URL, generate a detailed, actionable prompt that could be used to recreate or analyze the content at that URL. The prompt should be clear, specific, and well-structured. Return only the prompt text, no extra commentary.',
-          },
-          {
-            role: 'user',
-            content: `Generate a detailed prompt for this URL: ${parsedUrl.href}`,
-          },
-        ],
-        max_tokens: 1024,
-      }),
-    });
-
-    const aiData = await aiResponse.json();
-    const prompt = aiData.choices?.[0]?.message?.content ?? 'Failed to generate prompt.';
-
-    // If AI failed, refund the credit
-    if (!aiResponse.ok || !aiData.choices?.[0]?.message?.content) {
-      await supabase.rpc('refund_credit', { user_id: user.id });
-      return new Response(JSON.stringify({ error: 'AI generation failed, credit refunded' }), {
+    // 4) Call ScreenshotAPI.net to get a screenshot of the URL
+    const screenshotApiKey = Deno.env.get('SCREENSHOT_API_KEY');
+    if (!screenshotApiKey) {
+      await supabaseAdmin.rpc('refund_credit', { user_id: userId });
+      return new Response(JSON.stringify({ error: 'Screenshot API not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    return new Response(JSON.stringify({ prompt, creditsRemaining: updatedProfile }), {
+    const screenshotParams = new URLSearchParams({
+      token: screenshotApiKey,
+      url: parsedUrl.href,
+      output: 'image',
+      file_type: 'png',
+      wait_for_event: 'load',
+      full_page: 'true',
+    });
+    const screenshotUrl = `https://shot.screenshotapi.net/screenshot?${screenshotParams.toString()}`;
+
+    const screenshotResponse = await fetch(screenshotUrl);
+    if (!screenshotResponse.ok) {
+      await supabaseAdmin.rpc('refund_credit', { user_id: userId });
+      return new Response(JSON.stringify({ error: 'Failed to capture screenshot' }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const screenshotData = await screenshotResponse.json();
+    const imageUrl = screenshotData?.screenshot;
+    if (!imageUrl) {
+      await supabaseAdmin.rpc('refund_credit', { user_id: userId });
+      return new Response(JSON.stringify({ error: 'Screenshot API returned no image' }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 5) Send the screenshot to Anthropic Claude 3.5 Sonnet to reverse-engineer the UI
+    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    if (!anthropicApiKey) {
+      await supabaseAdmin.rpc('refund_credit', { user_id: userId });
+      return new Response(JSON.stringify({ error: 'Anthropic API not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4096,
+        system: `You are an expert UI/UX reverse-engineer. Given a screenshot of a website, produce a detailed, actionable prompt that a developer could paste into Lovable or v0 to recreate the UI faithfully. Include:
+- Overall layout structure (grid, flex, sections)
+- Color palette with exact hex/HSL values where possible
+- Typography (font sizes, weights, families)
+- Component breakdown (navbar, hero, cards, footer, etc.)
+- Spacing, padding, and margin patterns
+- Interactive elements (buttons, inputs, hover states)
+- Responsive design considerations
+Return ONLY the prompt text, no commentary or preamble.`,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: {
+                  type: 'url',
+                  url: imageUrl,
+                },
+              },
+              {
+                type: 'text',
+                text: `Reverse-engineer this screenshot from ${parsedUrl.href} into a detailed Lovable/v0 prompt that would recreate this UI.`,
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    const anthropicData = await anthropicResponse.json();
+
+    if (!anthropicResponse.ok || !anthropicData?.content?.[0]?.text) {
+      await supabaseAdmin.rpc('refund_credit', { user_id: userId });
+      const errorMsg = anthropicData?.error?.message || 'AI generation failed';
+      return new Response(JSON.stringify({ error: `AI generation failed: ${errorMsg}. Credit refunded.` }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const prompt = anthropicData.content[0].text;
+
+    // 6) Return the generated prompt
+    return new Response(JSON.stringify({ prompt, creditsRemaining: remainingCredits }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

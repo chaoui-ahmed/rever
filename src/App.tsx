@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute"; // <-- Import ajou
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import Showcase from "./pages/Showcase";
 
 const queryClient = new QueryClient();
 
@@ -19,6 +20,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            <Route path="/showcase" element={<Showcase />} />
             <Route path="/" element={<Navigate to="/auth" replace />} />
             <Route path="/auth" element={<Auth />} />
             {/* Route protégée ici */}
@@ -32,6 +34,7 @@ const App = () => (
             />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

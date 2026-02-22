@@ -1,4 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { NavLink } from "./NavLink";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,7 @@ import {
   CreditCard,
   RefreshCw,
   Settings,
+  LayoutGrid, // L'icône pour le Showcase
 } from "lucide-react";
 
 interface UserMenuProps {
@@ -82,6 +84,15 @@ const UserMenu = ({ credits, refreshing, onRefreshCredits, onOpenSettings, planN
           <User className="h-4 w-4" />
           <span>My Profile</span>
         </DropdownMenuItem>
+
+        {/* NOUVEAU : Lien vers le Showcase */}
+        <DropdownMenuItem asChild className="gap-2 cursor-pointer">
+          <NavLink to="/showcase">
+            <LayoutGrid className="h-4 w-4" />
+            <span>Showcase</span>
+          </NavLink>
+        </DropdownMenuItem>
+
         <DropdownMenuItem onClick={onOpenSettings} className="gap-2 cursor-pointer">
           <Settings className="h-4 w-4" />
           <span>Settings</span>

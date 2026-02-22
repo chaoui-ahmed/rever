@@ -40,7 +40,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      deduct_credit: { Args: { user_id: string }; Returns: number }
+      refund_credit: { Args: { user_id: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

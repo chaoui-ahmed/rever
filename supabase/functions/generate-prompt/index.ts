@@ -40,19 +40,6 @@ serve(async (req) => {
       });
     }
 
-    // Check credits
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('credits')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile || (profile.credits ?? 0) <= 0) {
-      return new Response(JSON.stringify({ error: 'No credits remaining' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
 
     const body = await req.json();
     const url = body?.url;

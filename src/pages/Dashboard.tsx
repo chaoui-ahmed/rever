@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -35,8 +34,13 @@ const Dashboard = () => {
       .from("profiles")
       .select("credits, plan_name")
       .eq("id", user.id)
-      .single();
-    if (!error && data) {
+      .maybeSingle();
+    if (error) {
+      console.error("Failed to fetch profile:", error);
+      toast.error("Failed to load your profile. Please try refreshing.");
+      return;
+    }
+    if (data) {
       setCredits(data.credits ?? 0);
       setPlanName(data.plan_name ?? "Free");
     }
@@ -77,12 +81,14 @@ const Dashboard = () => {
     );
   }
 
-  if (!user) return <Navigate to="/auth" replace />;
-
   const hasCredits = credits !== null && credits > 0;
 
   const handlePurchase50 = () => {
-    const stripeUrl = "https://buy.stripe.com/cNi5kCgI4a5XbiWbqsawo00";
+    const stripeUrl = import.meta.env.VITE_STRIPE_PAYMENT_URL;
+    if (!stripeUrl) {
+      toast.error("Payment is not configured. Please contact support.");
+      return;
+    }
     const params = new URLSearchParams({
       client_reference_id: user.id,
       prefilled_email: user.email ?? "",

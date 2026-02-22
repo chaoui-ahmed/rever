@@ -39,33 +39,73 @@ serve(async (req) => {
     const session = event.data.object as Stripe.Checkout.Session;
     const userId = session.client_reference_id;
     const customerEmail = session.customer_details?.email;
+    const isSubscription = session.mode === "subscription";
+    const subscriptionId = (session as any).subscription as string | null;
+
+    // Determine credit amount: 500 for the 500-credit link, 50 otherwise
+    // We check the amount_total (in cents) to differentiate plans
+    const amountTotal = session.amount_total ?? 0;
+    const creditAmount = amountTotal >= 4900 ? 500 : 50;
+
+    const planName = isSubscription ? "Pro" : undefined;
 
     if (userId) {
-      const { error } = await supabaseAdmin.rpc("add_credits", {
+      // Add credits
+      const { error: creditError } = await supabaseAdmin.rpc("add_credits", {
         p_user_id: userId,
-        p_amount: 50,
+        p_amount: creditAmount,
       });
-      if (error) {
-        console.error("Failed to add credits by user_id:", error.message);
+      if (creditError) {
+        console.error("Failed to add credits by user_id:", creditError.message);
       } else {
-        console.log(`Added 50 credits to user ${userId}`);
+        console.log(`Added ${creditAmount} credits to user ${userId}`);
+      }
+
+      // Update plan and subscription if it's a subscription
+      if (planName || subscriptionId) {
+        const updateData: Record<string, string> = {};
+        if (planName) updateData.plan_name = planName;
+        if (subscriptionId) updateData.stripe_subscription_id = subscriptionId;
+
+        const { error: updateError } = await supabaseAdmin
+          .from("profiles")
+          .update(updateData)
+          .eq("id", userId);
+        if (updateError) {
+          console.error("Failed to update plan:", updateError.message);
+        } else {
+          console.log(`Updated user ${userId} to plan: ${planName}, subscription: ${subscriptionId}`);
+        }
       }
     } else if (customerEmail) {
-      const { error } = await supabaseAdmin.rpc("add_credits_by_email", {
+      const { error: creditError } = await supabaseAdmin.rpc("add_credits_by_email", {
         p_email: customerEmail,
-        p_amount: 50,
+        p_amount: creditAmount,
       });
-      if (error) {
-        console.error("Failed to add credits by email:", error.message);
+      if (creditError) {
+        console.error("Failed to add credits by email:", creditError.message);
       } else {
-        console.log(`Added 50 credits to user with email ${customerEmail}`);
+        console.log(`Added ${creditAmount} credits to user with email ${customerEmail}`);
+      }
+
+      if (planName || subscriptionId) {
+        const updateData: Record<string, string> = {};
+        if (planName) updateData.plan_name = planName;
+        if (subscriptionId) updateData.stripe_subscription_id = subscriptionId;
+
+        const { error: updateError } = await supabaseAdmin
+          .from("profiles")
+          .update(updateData)
+          .eq("email", customerEmail);
+        if (updateError) {
+          console.error("Failed to update plan by email:", updateError.message);
+        }
       }
     } else {
       console.error("No client_reference_id or customer_email found in session");
     }
   }
 
-  // Always return 200 to prevent Stripe retries
   return new Response(JSON.stringify({ received: true }), {
     status: 200,
     headers: { "Content-Type": "application/json" },

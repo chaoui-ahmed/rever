@@ -21,6 +21,7 @@ import SettingsDialog from "@/components/SettingsDialog";
 const Dashboard = () => {
   const { user, loading, signOut } = useAuth();
   const [credits, setCredits] = useState<number | null>(null);
+  const [planName, setPlanName] = useState<string>("Free");
   const [url, setUrl] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
@@ -28,21 +29,23 @@ const Dashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const fetchCredits = async () => {
+  const fetchProfile = async () => {
     if (!user) return;
     const { data, error } = await supabase
       .from("profiles")
-      .select("credits")
+      .select("credits, plan_name")
       .eq("id", user.id)
       .single();
-    if (!error && data) setCredits(data.credits ?? 0);
+    if (!error && data) {
+      setCredits(data.credits ?? 0);
+      setPlanName(data.plan_name ?? "Free");
+    }
   };
 
   useEffect(() => {
     if (!user) return;
-    fetchCredits();
+    fetchProfile();
 
-    // Realtime listener for credit updates
     const channel = supabase
       .channel("credits-realtime")
       .on(
@@ -54,7 +57,9 @@ const Dashboard = () => {
           filter: `id=eq.${user.id}`,
         },
         (payload) => {
-          setCredits((payload.new as { credits: number }).credits ?? 0);
+          const newData = payload.new as { credits: number; plan_name: string };
+          setCredits(newData.credits ?? 0);
+          setPlanName(newData.plan_name ?? "Free");
         }
       )
       .subscribe();
@@ -87,7 +92,7 @@ const Dashboard = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchCredits();
+    await fetchProfile();
     setRefreshing(false);
   };
 
@@ -131,18 +136,30 @@ const Dashboard = () => {
         <div className="max-w-5xl mx-auto flex items-center justify-between px-6 h-16">
           <img src={reverLogo} alt="REVER" className="h-6" />
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-sm font-medium">
-              <Coins className="h-4 w-4 text-primary" />
-              <span className="text-foreground">
-                {credits !== null ? credits : "—"}
+            <div className="flex items-center gap-2">
+              <span
+                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                  planName === "Pro"
+                    ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 ring-1 ring-amber-400/30"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {planName}
               </span>
-              <span className="text-muted-foreground">credits</span>
+              <div className="flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-1.5 text-sm font-medium">
+                <Coins className="h-4 w-4 text-primary" />
+                <span className="text-foreground">
+                  {credits !== null ? credits : "—"}
+                </span>
+                <span className="text-muted-foreground">credits</span>
+              </div>
             </div>
             <UserMenu
               credits={credits}
               refreshing={refreshing}
               onRefreshCredits={handleRefresh}
               onOpenSettings={() => setIsSettingsOpen(true)}
+              planName={planName}
             />
           </div>
         </div>
@@ -240,6 +257,7 @@ const Dashboard = () => {
         open={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
         credits={credits}
+        planName={planName}
       />
     </div>
   );

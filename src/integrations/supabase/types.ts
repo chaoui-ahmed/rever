@@ -20,18 +20,24 @@ export type Database = {
           credits: number | null
           email: string | null
           id: string
+          plan_name: string | null
+          stripe_subscription_id: string | null
         }
         Insert: {
           created_at?: string
           credits?: number | null
           email?: string | null
           id: string
+          plan_name?: string | null
+          stripe_subscription_id?: string | null
         }
         Update: {
           created_at?: string
           credits?: number | null
           email?: string | null
           id?: string
+          plan_name?: string | null
+          stripe_subscription_id?: string | null
         }
         Relationships: []
       }

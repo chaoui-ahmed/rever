@@ -54,10 +54,50 @@ serve(async (req) => {
       });
     }
 
-    const { url } = await req.json();
-    if (!url) {
-      return new Response(JSON.stringify({ error: 'URL is required' }), {
+    const body = await req.json();
+    const url = body?.url;
+    if (!url || typeof url !== 'string' || url.length > 2048) {
+      return new Response(JSON.stringify({ error: 'A valid URL is required (max 2048 chars)' }), {
         status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate URL format and block internal addresses
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid URL format' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      return new Response(JSON.stringify({ error: 'Only http and https URLs are allowed' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const hostname = parsedUrl.hostname;
+    if (
+      hostname === 'localhost' ||
+      hostname.endsWith('.local') ||
+      /^(127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|169\.254\.|0\.)/.test(hostname) ||
+      hostname === '[::1]'
+    ) {
+      return new Response(JSON.stringify({ error: 'Internal or local URLs are not allowed' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Atomically deduct 1 credit (prevents race conditions)
+    const { data: updatedProfile, error: deductError } = await supabase.rpc('deduct_credit', { user_id: user.id });
+
+    if (deductError || !updatedProfile || updatedProfile < 0) {
+      return new Response(JSON.stringify({ error: 'No credits remaining' }), {
+        status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -78,7 +118,7 @@ serve(async (req) => {
           },
           {
             role: 'user',
-            content: `Generate a detailed prompt for this URL: ${url}`,
+            content: `Generate a detailed prompt for this URL: ${parsedUrl.href}`,
           },
         ],
         max_tokens: 1024,
@@ -88,13 +128,16 @@ serve(async (req) => {
     const aiData = await aiResponse.json();
     const prompt = aiData.choices?.[0]?.message?.content ?? 'Failed to generate prompt.';
 
-    // Deduct 1 credit
-    await supabase
-      .from('profiles')
-      .update({ credits: (profile.credits ?? 1) - 1 })
-      .eq('id', user.id);
+    // If AI failed, refund the credit
+    if (!aiResponse.ok || !aiData.choices?.[0]?.message?.content) {
+      await supabase.rpc('refund_credit', { user_id: user.id });
+      return new Response(JSON.stringify({ error: 'AI generation failed, credit refunded' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    return new Response(JSON.stringify({ prompt, creditsRemaining: (profile.credits ?? 1) - 1 }), {
+    return new Response(JSON.stringify({ prompt, creditsRemaining: updatedProfile }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {

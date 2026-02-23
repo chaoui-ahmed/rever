@@ -1,12 +1,14 @@
 import React from "react"
 import { motion } from "framer-motion"
 import { ExternalLink } from "lucide-react"
+
+// Note: Ensure you have useShortcuts and clamp in your hooks folder as per your original file
 import { useShortcuts, clamp } from "@/hooks/use-shortcut"
 
 const FRAME_OFFSET = -40
 const FRAMES_VISIBLE_LENGTH = 4
 const SCROLL_THRESHOLD = 40
-const BUFFER_SIZE = 8 
+const BUFFER_SIZE = 20 
 
 export default function SiteTimeMachine({ sites }: { sites: any[] }) {
   const [currentIndex, setCurrentIndex] = React.useState(0)
@@ -50,6 +52,7 @@ export default function SiteTimeMachine({ sites }: { sites: any[] }) {
       }
     }
 
+    // Touch events for mobile
     const handleTouchStart = (e: TouchEvent) => { touchStartY.current = e.touches[0].clientY }
     const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault()
@@ -84,6 +87,7 @@ export default function SiteTimeMachine({ sites }: { sites: any[] }) {
   })
 
   if (!sites || sites.length === 0) return null;
+
   const visibleCards = getVisibleCards()
 
   return (
@@ -97,6 +101,7 @@ export default function SiteTimeMachine({ sites }: { sites: any[] }) {
           const y = clamp(offsetIndex * FRAME_OFFSET, [FRAME_OFFSET * FRAMES_VISIBLE_LENGTH, Number.POSITIVE_INFINITY])
 
           const site = sites[card.siteIndex]
+          // Using a free screenshot service to generate previews
           const screenshotUrl = `https://image.thum.io/get/width/800/crop/600/https://${site.domain}`
 
           return (
@@ -121,14 +126,20 @@ export default function SiteTimeMachine({ sites }: { sites: any[] }) {
                     <ExternalLink size={14} />
                   </a>
                </div>
-              <div className="flex-1 relative bg-black/50">
-                {offsetIndex < FRAMES_VISIBLE_LENGTH && (
-                   <img src={screenshotUrl} alt={site.domain} className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
-                )}
-              </div>
+               <div className="flex-1 relative bg-black/50">
+                 <img 
+                  src={screenshotUrl} 
+                  alt={site.domain} 
+                  loading="eager" // Force le chargement immédiat
+                  className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" 
+                 />
+               </div>
             </motion.div>
           )
         })}
+      </div>
+      <div className="absolute bottom-4 text-xs text-muted-foreground animate-pulse pointer-events-none">
+        Scroll to explore
       </div>
     </div>
   )

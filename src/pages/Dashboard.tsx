@@ -181,7 +181,7 @@ const Dashboard = () => {
       {/* Header avec logo agrandi et style Chrome */}
       <header className="border-b border-white/10 sticky top-0 z-10 bg-background/60 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-20">
-          <img src={reverLogo} alt="REVER" className="h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
+          <img src={reverLogo} alt="REVER" className="h-14 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${

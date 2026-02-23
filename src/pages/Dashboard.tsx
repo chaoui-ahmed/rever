@@ -206,7 +206,7 @@ const Dashboard = () => {
           <div className="flex justify-center">
             <TabsList className="grid w-full max-w-[400px] grid-cols-2 bg-secondary/50 backdrop-blur-md border border-white/5">
               <TabsTrigger value="generate" className="gap-2 data-[state=active]:bg-white/10">
-                <Zap className="h-4 w-4" /> Générer
+                <Zap className="h-4 w-4" /> Generator
               </TabsTrigger>
               <TabsTrigger value="showcase" className="gap-2 data-[state=active]:bg-white/10">
                 <Globe className="h-4 w-4" /> Showcase
@@ -220,9 +220,9 @@ const Dashboard = () => {
               <img src={reverLogo} alt="REVER" className="h-28 mx-auto filter drop-shadow-[0_0_30px_rgba(255,255,255,0.15)] animate-in zoom-in duration-700" />
               <div className="space-y-3">
                 <h1 className="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50">
-                  Générer un Prompt
+                  REVER
                 </h1>
-                <p className="text-muted-foreground text-lg max-w-md mx-auto font-light">Collez n'importe quelle URL et laissez la magie opérer.</p>
+                <p className="text-muted-foreground text-lg max-w-md mx-auto font-light">Paste the url and generate your prompt.</p>
               </div>
             </div>
 
@@ -268,7 +268,6 @@ const Dashboard = () => {
             <div className="flex flex-col md:flex-row gap-4 justify-between items-end md:items-center">
               <div>
                 <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-white/50">The Archive</h2>
-                <p className="text-muted-foreground">Inspiration des projets Vercel & Lovable.</p>
               </div>
               <div className="flex gap-2 w-full md:w-auto">
                 <div className="relative flex-1 md:w-64">

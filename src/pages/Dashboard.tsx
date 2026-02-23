@@ -31,6 +31,16 @@ interface Site {
   platform: string;
 }
 
+// Fonction utilitaire pour mélanger un tableau (Fisher-Yates shuffle)
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+
 const Dashboard = () => {
   const { user } = useAuth();
   const [credits, setCredits] = useState<number | null>(null);
@@ -72,9 +82,12 @@ const Dashboard = () => {
     setLoadingShowcase(true);
     const { data } = await supabase
       .from("discovered_sites")
-      .select("*")
-      .order('created_at', { ascending: false });
-    if (data) setSites(data);
+      .select("*"); // Plus de .order(), on prend tout pour randomiser
+      
+    if (data) {
+      // On randomise l'ordre des sites récupérés
+      setSites(shuffleArray(data));
+    }
     setLoadingShowcase(false);
   };
 
@@ -83,7 +96,6 @@ const Dashboard = () => {
     fetchProfile();
     fetchShowcaseSites();
 
-    // LOGIQUE TEMPS RÉEL (Récupérée de ton code original)
     const channel = supabase
       .channel("credits-realtime")
       .on(
@@ -142,7 +154,6 @@ const Dashboard = () => {
     }
   };
 
-  // LOGIQUE D'ACHAT (Récupérée de ton code original)
   const handlePurchase50 = () => {
     const stripeUrl = import.meta.env.VITE_STRIPE_PAYMENT_URL;
     if (!stripeUrl) {
@@ -178,7 +189,6 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary/20">
-      {/* Header avec logo agrandi et style Chrome */}
       <header className="border-b border-white/10 sticky top-0 z-10 bg-background/60 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-20">
           <img src={reverLogo} alt="REVER" className="h-14 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
@@ -200,7 +210,6 @@ const Dashboard = () => {
       </header>
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-12 relative">
-        {/* Glow effect central */}
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
 
         <Tabs defaultValue="generate" className="w-full space-y-12 relative z-10">
@@ -215,7 +224,6 @@ const Dashboard = () => {
             </TabsList>
           </div>
 
-          {/* TAB GENERATE : Chrome UI avec LiquidMetalButton */}
           <TabsContent value="generate" className="space-y-10 focus-visible:outline-none flex flex-col items-center animate-in fade-in duration-700">
             <div className="text-center space-y-6 pt-6">
               <img src={reverIcon} alt="REVER" className="h-28 mx-auto filter drop-shadow-[0_0_30px_rgba(255,255,255,0.15)] animate-in zoom-in duration-700" />
@@ -264,7 +272,6 @@ const Dashboard = () => {
             </div>
           </TabsContent>
 
-          {/* TAB SHOWCASE : Infinite Scrolling Archive */}
           <TabsContent value="showcase" className="space-y-6 focus-visible:outline-none animate-in fade-in duration-700">
             <div className="flex flex-col md:flex-row gap-4 justify-between items-end md:items-center">
               <div>
@@ -287,15 +294,14 @@ const Dashboard = () => {
               <div className="flex justify-center py-32"><div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>
             ) : (
               <div className="space-y-24 mt-8">
-                {/* Infinite Scroll UI */}
                 <div>
                   <SiteTimeMachine sites={filteredSites} />
                 </div>
 
-                {/* Annuaire Minimaliste */}
                 <div className="w-full max-w-4xl mx-auto border-t border-white/5 pt-12 pb-20">
                   <div className="flex items-center justify-between mb-8 px-2">
-                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-40">Index Alphabétique</h3>
+                    {/* Changement de texte ici pour refléter la randomisation */}
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-40">Index Aléatoire</h3>
                     <span className="text-[10px] font-mono text-muted-foreground/30">{filteredSites.length} domaines répertoriés</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

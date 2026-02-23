@@ -1,14 +1,13 @@
-import React from "react"
+import React, { useMemo } from "react"
 import { motion } from "framer-motion"
 import { ExternalLink } from "lucide-react"
-
-// Note: Ensure you have useShortcuts and clamp in your hooks folder as per your original file
 import { useShortcuts, clamp } from "@/hooks/use-shortcut"
 
 const FRAME_OFFSET = -40
 const FRAMES_VISIBLE_LENGTH = 4
 const SCROLL_THRESHOLD = 40
-const BUFFER_SIZE = 20 
+// On réduit un peu le buffer pour soulager la RAM et le DOM
+const BUFFER_SIZE = 4 
 
 export default function SiteTimeMachine({ sites }: { sites: any[] }) {
   const [currentIndex, setCurrentIndex] = React.useState(0)
@@ -17,8 +16,19 @@ export default function SiteTimeMachine({ sites }: { sites: any[] }) {
   const lastUpdateTime = React.useRef(Date.now())
   const touchStartY = React.useRef(0)
 
+  // 1. MISE EN CACHE (Memoization) DES DONNÉES ET URLs
+  // On pré-calcule les URLs avec une résolution plus faible (600x400 au lieu de 800x600)
+  // pour drastiquement accélérer le téléchargement et le rendu.
+  const cachedSites = useMemo(() => {
+    if (!sites) return [];
+    return sites.map(site => ({
+      ...site,
+      screenshotUrl: `https://image.thum.io/get/width/600/crop/400/https://${site.domain}`
+    }));
+  }, [sites]);
+
   const getVisibleCards = React.useCallback(() => {
-    if (!sites || sites.length === 0) return []
+    if (!cachedSites || cachedSites.length === 0) return []
     const start = currentIndex - BUFFER_SIZE
     const end = currentIndex + FRAMES_VISIBLE_LENGTH + BUFFER_SIZE
     const cards = []
@@ -26,17 +36,18 @@ export default function SiteTimeMachine({ sites }: { sites: any[] }) {
     for (let i = start; i <= end; i++) {
       cards.push({
         index: i,
-        siteIndex: ((i % sites.length) + sites.length) % sites.length,
+        siteIndex: ((i % cachedSites.length) + cachedSites.length) % cachedSites.length,
       })
     }
     return cards
-  }, [currentIndex, sites])
+  }, [currentIndex, cachedSites])
 
   React.useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
-    const MIN_UPDATE_INTERVAL = 75
+    // On augmente légèrement l'intervalle pour éviter le spam de rendus React lors d'un scroll violent
+    const MIN_UPDATE_INTERVAL = 80 
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault()
@@ -52,7 +63,6 @@ export default function SiteTimeMachine({ sites }: { sites: any[] }) {
       }
     }
 
-    // Touch events for mobile
     const handleTouchStart = (e: TouchEvent) => { touchStartY.current = e.touches[0].clientY }
     const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault()
@@ -86,8 +96,7 @@ export default function SiteTimeMachine({ sites }: { sites: any[] }) {
     ArrowLeft: () => setCurrentIndex((prev) => prev - 1),
   })
 
-  if (!sites || sites.length === 0) return null;
-
+  if (!cachedSites || cachedSites.length === 0) return null;
   const visibleCards = getVisibleCards()
 
   return (
@@ -100,9 +109,8 @@ export default function SiteTimeMachine({ sites }: { sites: any[] }) {
           const scale = clamp(1 - offsetIndex * 0.08, [0.08, 2])
           const y = clamp(offsetIndex * FRAME_OFFSET, [FRAME_OFFSET * FRAMES_VISIBLE_LENGTH, Number.POSITIVE_INFINITY])
 
-          const site = sites[card.siteIndex]
-          // Using a free screenshot service to generate previews
-          const screenshotUrl = `https://image.thum.io/get/width/800/crop/600/https://${site.domain}`
+          const site = cachedSites[card.siteIndex]
+          const isVisible = offsetIndex < FRAMES_VISIBLE_LENGTH
 
           return (
             <motion.div
@@ -114,32 +122,33 @@ export default function SiteTimeMachine({ sites }: { sites: any[] }) {
                 transition: { type: "spring", stiffness: 250, damping: 20, mass: 0.5 },
               }}
               style={{
-                willChange: "opacity, filter, transform",
+                willChange: "transform", // On retire filter et opacity du willChange pour économiser la VRAM GPU
                 filter: `blur(${blur}px)`,
                 opacity,
                 zIndex: 1000 - card.index,
               }}
             >
-               <div className="h-10 border-b border-border/50 bg-secondary/50 flex items-center px-4 justify-between backdrop-blur-sm">
+               <div className="h-10 border-b border-border/50 bg-secondary/50 flex items-center px-4 justify-between backdrop-blur-sm z-10">
                   <span className="text-xs font-mono text-muted-foreground">{site.domain}</span>
                   <a href={`https://${site.domain}`} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
                     <ExternalLink size={14} />
                   </a>
                </div>
-               <div className="flex-1 relative bg-black/50">
-                 <img 
-                  src={screenshotUrl} 
-                  alt={site.domain} 
-                  loading="eager" // Force le chargement immédiat
-                  className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" 
-                 />
-               </div>
+              <div className="flex-1 relative bg-black/50 overflow-hidden">
+                {/* 2. OPTIMISATION DU DÉCODAGE D'IMAGE */}
+                {isVisible && (
+                   <img 
+                      src={site.screenshotUrl} 
+                      alt={site.domain} 
+                      decoding="async" // CRUCIAL : Empêche le décodage de l'image de bloquer l'animation de défilement
+                      loading={offsetIndex <= 1 ? "eager" : "lazy"} // Charge immédiatement la 1ère, lazy load le reste
+                      className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" 
+                   />
+                )}
+              </div>
             </motion.div>
           )
         })}
-      </div>
-      <div className="absolute bottom-4 text-xs text-muted-foreground animate-pulse pointer-events-none">
-        Scroll to explore
       </div>
     </div>
   )

@@ -13,6 +13,16 @@ interface Site {
   platform: string;
 }
 
+// Fonction utilitaire pour mélanger un tableau (Fisher-Yates shuffle)
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+
 const Showcase = () => {
   const [sites, setSites] = useState<Site[]>([]);
   const [filter, setFilter] = useState("all");
@@ -28,11 +38,13 @@ const Showcase = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("discovered_sites")
-        .select("*")
-        .order('created_at', { ascending: false });
+        .select("*"); // Plus de .order() pour l'aléatoire
       
       if (error) throw error;
-      if (data) setSites(data);
+      if (data) {
+        // Randomisation immédiate des sites récupérés
+        setSites(shuffleArray(data));
+      }
     } catch (err) {
       console.error("Erreur lors de la récupération des sites:", err);
     } finally {
@@ -40,7 +52,6 @@ const Showcase = () => {
     }
   };
 
-  // Logique de filtrage combinée (Plateforme + Recherche)
   const filteredSites = sites.filter((site) => {
     const matchesFilter = filter === "all" || site.platform.toLowerCase() === filter.toLowerCase();
     const matchesSearch = site.domain.toLowerCase().includes(search.toLowerCase());
@@ -49,7 +60,6 @@ const Showcase = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground py-12 px-4 flex flex-col items-center relative overflow-hidden">
-      {/* Background glow effect for Chrome aesthetic */}
       <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
 
       <div className="relative z-10 flex flex-col items-center mb-12 text-center max-w-3xl mx-auto">
@@ -92,13 +102,11 @@ const Showcase = () => {
           </div>
         ) : filteredSites.length > 0 ? (
           <div className="space-y-32">
-            {/* Infinite Time Machine UI */}
             <SiteTimeMachine sites={filteredSites} />
 
-            {/* Annuaire Minimaliste (Bas de page) */}
             <div className="w-full max-w-4xl mx-auto border-t border-white/5 pt-16 pb-24 animate-in fade-in slide-in-from-bottom-8 duration-1000">
               <div className="flex items-center justify-between mb-10 px-2">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.25em] opacity-40">Directory Alpha</h3>
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.25em] opacity-40">Discovery Index</h3>
                 <span className="text-[10px] font-mono text-muted-foreground/30">{filteredSites.length} entrées</span>
               </div>
               
@@ -139,7 +147,6 @@ const Showcase = () => {
         )}
       </div>
 
-      {/* Hidden original grid logic preserved for integrity as requested */}
       {false && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredSites.map((site) => (

@@ -21,6 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import reverLogo from "@/assets/rever-logo.png";
 import UserMenu from "@/components/UserMenu";
 import SettingsDialog from "@/components/SettingsDialog";
+import { LiquidMetalButton } from "@/components/liquid-metal-button";
+import SiteTimeMachine from "@/components/SiteTimeMachine";
 
 interface Site {
   id: number;
@@ -80,7 +82,7 @@ const Dashboard = () => {
     fetchProfile();
     fetchShowcaseSites();
 
-    // LOGIQUE TEMPS RÉEL (Récupérée de ton code original)
+    // LOGIQUE TEMPS RÉEL
     const channel = supabase
       .channel("credits-realtime")
       .on(
@@ -139,7 +141,7 @@ const Dashboard = () => {
     }
   };
 
-  // LOGIQUE D'ACHAT (Récupérée de ton code original)
+  // LOGIQUE D'ACHAT
   const handlePurchase50 = () => {
     const stripeUrl = import.meta.env.VITE_STRIPE_PAYMENT_URL;
     if (!stripeUrl) {
@@ -174,11 +176,11 @@ const Dashboard = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header avec logo agrandi */}
-      <header className="border-b border-border sticky top-0 z-10 bg-background/80 backdrop-blur-md">
-        <div className="max-w-5xl mx-auto flex items-center justify-between px-6 h-20">
-          <img src={reverLogo} alt="REVER" className="h-10 w-auto" /> {/* Logo plus gros (h-10) */}
+    <div className="min-h-screen bg-background flex flex-col selection:bg-primary/20">
+      {/* Header */}
+      <header className="border-b border-white/10 sticky top-0 z-10 bg-background/60 backdrop-blur-xl">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-20">
+          <img src={reverLogo} alt="REVER" className="h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -196,52 +198,69 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-12">
-        <Tabs defaultValue="generate" className="w-full space-y-12">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-12 relative">
+        {/* Glow effect behind the main content */}
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+
+        <Tabs defaultValue="generate" className="w-full space-y-12 relative z-10">
           <div className="flex justify-center">
-            <TabsList className="grid w-full max-w-[400px] grid-cols-2">
-              <TabsTrigger value="generate" className="gap-2">
-                <Zap className="h-4 w-4" /> Générer
+            <TabsList className="grid w-full max-w-[400px] grid-cols-2 bg-secondary/50 backdrop-blur-md border border-white/5">
+              <TabsTrigger value="generate" className="gap-2 data-[state=active]:bg-white/10">
+                <Zap className="h-4 w-4" /> Studio
               </TabsTrigger>
-              <TabsTrigger value="showcase" className="gap-2">
+              <TabsTrigger value="showcase" className="gap-2 data-[state=active]:bg-white/10">
                 <Globe className="h-4 w-4" /> Showcase
               </TabsTrigger>
             </TabsList>
           </div>
 
-          {/* TAB GENERATE : Logo au centre */}
-          <TabsContent value="generate" className="space-y-10 focus-visible:outline-none flex flex-col items-center">
+          {/* TAB GENERATE */}
+          <TabsContent value="generate" className="space-y-10 flex flex-col items-center animate-in fade-in duration-700 focus-visible:outline-none">
             <div className="text-center space-y-6 pt-6">
-              <img src={reverLogo} alt="REVER" className="h-24 mx-auto animate-in fade-in zoom-in duration-700" /> {/* Logo Central géant */}
+              <img src={reverLogo} alt="REVER" className="h-28 mx-auto filter drop-shadow-[0_0_30px_rgba(255,255,255,0.15)]" />
               <div className="space-y-3">
-                <h1 className="text-4xl font-bold tracking-tight text-foreground">Générer un Prompt</h1>
-                <p className="text-muted-foreground text-lg max-w-md mx-auto">Collez n'importe quelle URL et laissez la magie opérer.</p>
+                <h1 className="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50">
+                  Forge Your Vision
+                </h1>
+                <p className="text-muted-foreground text-lg max-w-md mx-auto font-light">
+                  Input a destination. Extract the essence.
+                </p>
               </div>
             </div>
 
-            <div className="w-full max-w-2xl space-y-4">
-              <div className="relative">
-                <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input type="url" placeholder="https://example.com" value={url} onChange={(e) => setUrl(e.target.value)} className="h-14 pl-12 pr-4 text-base bg-card border-border rounded-lg" />
+            <div className="w-full max-w-xl space-y-8 flex flex-col items-center">
+              <div className="relative w-full group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-white/10 to-white/5 rounded-xl blur opacity-30 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                <div className="relative flex items-center bg-card border border-white/10 rounded-xl overflow-hidden shadow-2xl">
+                  <LinkIcon className="absolute left-4 h-5 w-5 text-muted-foreground/50" />
+                  <Input 
+                    type="url" 
+                    placeholder="https://..." 
+                    value={url} 
+                    onChange={(e) => setUrl(e.target.value)} 
+                    className="h-16 pl-12 pr-4 text-lg bg-transparent border-none focus-visible:ring-0 placeholder:text-muted-foreground/30" 
+                  />
+                </div>
               </div>
 
-              {hasCredits ? (
-                <Button onClick={handleGenerate} disabled={generating} className="w-full h-14 text-base font-semibold rounded-lg">
-                  {generating ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Zap className="h-5 w-5 mr-2" />}
-                  {generating ? "Generating…" : "Generate Prompt"}
-                </Button>
-              ) : (
-                <div className="space-y-3">
-                  <Button disabled className="w-full h-14 text-base font-semibold rounded-lg opacity-50"><Zap className="h-5 w-5 mr-2" /> Generate Prompt</Button>
-                  <p className="text-center text-sm text-muted-foreground">You're out of credits. <button onClick={handlePurchase50} className="text-primary underline hover:text-primary/80">Purchase more</button></p>
-                </div>
-              )}
+              <div className="pt-4 flex flex-col items-center scale-110">
+                <LiquidMetalButton 
+                  label={generating ? "Extracting..." : "Generate Sequence"} 
+                  onClick={hasCredits ? handleGenerate : handlePurchase50} 
+                  viewMode="text" 
+                />
+                {!hasCredits && (
+                  <p className="text-sm text-destructive mt-6">
+                    Insufficient credits. Clicking above will prompt purchase.
+                  </p>
+                )}
+              </div>
 
               {generatedPrompt && (
-                <div className="rounded-lg border bg-card p-6 space-y-4 animate-in fade-in slide-in-from-bottom-4">
+                <div className="w-full rounded-xl border border-white/10 bg-card/50 backdrop-blur-md p-6 space-y-4 mt-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Generated Prompt</h2>
-                    <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5">
+                    <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5 border-white/10 bg-white/5 hover:bg-white/10">
                       {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                       {copied ? "Copied" : "Copy"}
                     </Button>
@@ -253,18 +272,27 @@ const Dashboard = () => {
           </TabsContent>
 
           {/* TAB SHOWCASE */}
-          <TabsContent value="showcase" className="space-y-6 focus-visible:outline-none">
+          <TabsContent value="showcase" className="space-y-6 focus-visible:outline-none animate-in fade-in duration-700">
             <div className="flex flex-col md:flex-row gap-4 justify-between items-end md:items-center">
               <div>
-                <h2 className="text-2xl font-bold">Showcase</h2>
+                <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-white/50">The Archive</h2>
                 <p className="text-muted-foreground">Inspiration des projets Vercel & Lovable.</p>
               </div>
               <div className="flex gap-2 w-full md:w-auto">
                 <div className="relative flex-1 md:w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Rechercher..." className="pl-9" value={showcaseSearch} onChange={(e) => setShowcaseSearch(e.target.value)} />
+                  <Input 
+                    placeholder="Rechercher..." 
+                    className="pl-9 bg-black/20 border-white/5 focus-visible:ring-1 focus-visible:ring-primary" 
+                    value={showcaseSearch} 
+                    onChange={(e) => setShowcaseSearch(e.target.value)} 
+                  />
                 </div>
-                <select className="bg-secondary text-sm rounded-md px-3 border-none focus:ring-1 ring-primary" value={showcaseFilter} onChange={(e) => setShowcaseFilter(e.target.value)}>
+                <select 
+                  className="bg-secondary/50 text-sm rounded-md px-3 border border-white/5 focus:ring-1 ring-primary" 
+                  value={showcaseFilter} 
+                  onChange={(e) => setShowcaseFilter(e.target.value)}
+                >
                   <option value="all">Tous</option>
                   <option value="vercel">Vercel</option>
                   <option value="lovable">Lovable</option>
@@ -273,21 +301,10 @@ const Dashboard = () => {
             </div>
 
             {loadingShowcase ? (
-              <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+              <div className="flex justify-center py-32"><div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredSites.map((site) => (
-                  <Card key={site.id} className="group hover:border-primary/50 transition-all">
-                    <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0">
-                      <CardTitle className="text-sm font-bold truncate pr-2">{site.domain.split('.')[0]}</CardTitle>
-                      <a href={`https://${site.domain}`} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-primary"><ExternalLink className="h-4 w-4" /></a>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-4 flex justify-between items-center">
-                      <span className="text-[11px] text-muted-foreground truncate flex-1">{site.domain}</span>
-                      <Badge variant={site.platform === 'lovable' ? 'default' : 'secondary'} className="text-[9px] h-5">{site.platform}</Badge>
-                    </CardContent>
-                  </Card>
-                ))}
+              <div className="mt-8">
+                <SiteTimeMachine sites={filteredSites} />
               </div>
             )}
           </TabsContent>

@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import reverLogo from "@/assets/rever-logo.png";
+import reverIcon from "@/assets/rever-icon.png";
 import UserMenu from "@/components/UserMenu";
 import SettingsDialog from "@/components/SettingsDialog";
 import { LiquidMetalButton } from "@/components/liquid-metal-button";
@@ -217,7 +218,7 @@ const Dashboard = () => {
           {/* TAB GENERATE : Chrome UI avec LiquidMetalButton */}
           <TabsContent value="generate" className="space-y-10 focus-visible:outline-none flex flex-col items-center animate-in fade-in duration-700">
             <div className="text-center space-y-6 pt-6">
-              <img src={reverLogo} alt="REVER" className="h-28 mx-auto filter drop-shadow-[0_0_30px_rgba(255,255,255,0.15)] animate-in zoom-in duration-700" />
+              <img src={reverIcon} alt="REVER" className="h-28 mx-auto filter drop-shadow-[0_0_30px_rgba(255,255,255,0.15)] animate-in zoom-in duration-700" />
               <div className="space-y-3">
                 <h1 className="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50">
                   REVER

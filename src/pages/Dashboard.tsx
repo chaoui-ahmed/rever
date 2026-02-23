@@ -286,8 +286,45 @@ const Dashboard = () => {
             {loadingShowcase ? (
               <div className="flex justify-center py-32"><div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>
             ) : (
-              <div className="mt-8">
-                <SiteTimeMachine sites={filteredSites} />
+              <div className="space-y-24 mt-8">
+                {/* Infinite Scroll UI */}
+                <div>
+                  <SiteTimeMachine sites={filteredSites} />
+                </div>
+
+                {/* Annuaire Minimaliste */}
+                <div className="w-full max-w-4xl mx-auto border-t border-white/5 pt-12 pb-20">
+                  <div className="flex items-center justify-between mb-8 px-2">
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-40">Index Alphabétique</h3>
+                    <span className="text-[10px] font-mono text-muted-foreground/30">{filteredSites.length} domaines répertoriés</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {filteredSites.map((site) => (
+                      <a
+                        key={site.id}
+                        href={`https://${site.domain}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] hover:border-white/10 transition-all group"
+                      >
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <div className="w-8 h-8 rounded-lg bg-secondary/30 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                            <Globe className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </div>
+                          <span className="text-sm font-medium truncate opacity-60 group-hover:opacity-100 transition-opacity">
+                            {site.domain}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-white/10 text-muted-foreground/40 uppercase font-bold">
+                            {site.platform}
+                          </Badge>
+                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/10 group-hover:text-primary transition-colors" />
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </TabsContent>

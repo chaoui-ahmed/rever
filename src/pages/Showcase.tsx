@@ -91,7 +91,45 @@ const Showcase = () => {
             <p className="text-muted-foreground tracking-widest text-sm uppercase">Chargement des pépites en cours...</p>
           </div>
         ) : filteredSites.length > 0 ? (
-          <SiteTimeMachine sites={filteredSites} />
+          <div className="space-y-32">
+            {/* Infinite Time Machine UI */}
+            <SiteTimeMachine sites={filteredSites} />
+
+            {/* Annuaire Minimaliste (Bas de page) */}
+            <div className="w-full max-w-4xl mx-auto border-t border-white/5 pt-16 pb-24 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+              <div className="flex items-center justify-between mb-10 px-2">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.25em] opacity-40">Directory Alpha</h3>
+                <span className="text-[10px] font-mono text-muted-foreground/30">{filteredSites.length} entrées</span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {filteredSites.map((site) => (
+                  <a
+                    key={site.id}
+                    href={`https://${site.domain}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-4 rounded-xl bg-white/[0.015] border border-white/5 hover:bg-white/[0.04] hover:border-white/10 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all group"
+                  >
+                    <div className="flex items-center gap-4 overflow-hidden">
+                      <div className="w-9 h-9 rounded-lg bg-secondary/20 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                        <Globe className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-all" />
+                      </div>
+                      <span className="text-sm font-medium truncate opacity-60 group-hover:opacity-100 transition-opacity">
+                        {site.domain}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Badge variant="outline" className="text-[9px] h-4 px-2 border-white/5 bg-white/[0.02] text-muted-foreground/40 uppercase font-black tracking-tighter">
+                        {site.platform}
+                      </Badge>
+                      <ExternalLink className="h-4 w-4 text-muted-foreground/10 group-hover:text-primary transition-all" />
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="text-center py-32 border border-dashed border-white/10 rounded-3xl bg-card/20 backdrop-blur-sm">
             <Globe className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />

@@ -221,7 +221,7 @@ const Dashboard = () => {
               <img src={reverIcon} alt="REVER" className="h-28 mx-auto filter drop-shadow-[0_0_30px_rgba(255,255,255,0.15)] animate-in zoom-in duration-700" />
               <div className="space-y-3">
                 <h1 className="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50">
-                  REVER
+                  REVƎЯ
                 </h1>
                 <p className="text-muted-foreground text-lg max-w-md mx-auto font-light">Paste the url and generate your prompt.</p>
               </div>

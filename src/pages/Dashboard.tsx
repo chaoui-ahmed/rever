@@ -82,7 +82,7 @@ const Dashboard = () => {
     fetchProfile();
     fetchShowcaseSites();
 
-    // LOGIQUE TEMPS RÉEL
+    // LOGIQUE TEMPS RÉEL (Récupérée de ton code original)
     const channel = supabase
       .channel("credits-realtime")
       .on(
@@ -141,7 +141,7 @@ const Dashboard = () => {
     }
   };
 
-  // LOGIQUE D'ACHAT
+  // LOGIQUE D'ACHAT (Récupérée de ton code original)
   const handlePurchase50 = () => {
     const stripeUrl = import.meta.env.VITE_STRIPE_PAYMENT_URL;
     if (!stripeUrl) {
@@ -177,7 +177,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col selection:bg-primary/20">
-      {/* Header */}
+      {/* Header avec logo agrandi et style Chrome */}
       <header className="border-b border-white/10 sticky top-0 z-10 bg-background/60 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-20">
           <img src={reverLogo} alt="REVER" className="h-10 w-auto filter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]" />
@@ -199,14 +199,14 @@ const Dashboard = () => {
       </header>
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-12 relative">
-        {/* Glow effect behind the main content */}
+        {/* Glow effect central */}
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
 
         <Tabs defaultValue="generate" className="w-full space-y-12 relative z-10">
           <div className="flex justify-center">
             <TabsList className="grid w-full max-w-[400px] grid-cols-2 bg-secondary/50 backdrop-blur-md border border-white/5">
               <TabsTrigger value="generate" className="gap-2 data-[state=active]:bg-white/10">
-                <Zap className="h-4 w-4" /> Studio
+                <Zap className="h-4 w-4" /> Générer
               </TabsTrigger>
               <TabsTrigger value="showcase" className="gap-2 data-[state=active]:bg-white/10">
                 <Globe className="h-4 w-4" /> Showcase
@@ -214,17 +214,15 @@ const Dashboard = () => {
             </TabsList>
           </div>
 
-          {/* TAB GENERATE */}
-          <TabsContent value="generate" className="space-y-10 flex flex-col items-center animate-in fade-in duration-700 focus-visible:outline-none">
+          {/* TAB GENERATE : Chrome UI avec LiquidMetalButton */}
+          <TabsContent value="generate" className="space-y-10 focus-visible:outline-none flex flex-col items-center animate-in fade-in duration-700">
             <div className="text-center space-y-6 pt-6">
-              <img src={reverLogo} alt="REVER" className="h-28 mx-auto filter drop-shadow-[0_0_30px_rgba(255,255,255,0.15)]" />
+              <img src={reverLogo} alt="REVER" className="h-28 mx-auto filter drop-shadow-[0_0_30px_rgba(255,255,255,0.15)] animate-in zoom-in duration-700" />
               <div className="space-y-3">
                 <h1 className="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50">
-                  Forge Your Vision
+                  Générer un Prompt
                 </h1>
-                <p className="text-muted-foreground text-lg max-w-md mx-auto font-light">
-                  Input a destination. Extract the essence.
-                </p>
+                <p className="text-muted-foreground text-lg max-w-md mx-auto font-light">Collez n'importe quelle URL et laissez la magie opérer.</p>
               </div>
             </div>
 
@@ -232,26 +230,20 @@ const Dashboard = () => {
               <div className="relative w-full group">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-white/10 to-white/5 rounded-xl blur opacity-30 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
                 <div className="relative flex items-center bg-card border border-white/10 rounded-xl overflow-hidden shadow-2xl">
-                  <LinkIcon className="absolute left-4 h-5 w-5 text-muted-foreground/50" />
-                  <Input 
-                    type="url" 
-                    placeholder="https://..." 
-                    value={url} 
-                    onChange={(e) => setUrl(e.target.value)} 
-                    className="h-16 pl-12 pr-4 text-lg bg-transparent border-none focus-visible:ring-0 placeholder:text-muted-foreground/30" 
-                  />
+                  <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/50" />
+                  <Input type="url" placeholder="https://example.com" value={url} onChange={(e) => setUrl(e.target.value)} className="h-16 pl-12 pr-4 text-lg bg-transparent border-none focus-visible:ring-0 placeholder:text-muted-foreground/30" />
                 </div>
               </div>
 
               <div className="pt-4 flex flex-col items-center scale-110">
                 <LiquidMetalButton 
-                  label={generating ? "Extracting..." : "Generate Sequence"} 
+                  label={generating ? "Extracting..." : "Generate Prompt"} 
                   onClick={hasCredits ? handleGenerate : handlePurchase50} 
                   viewMode="text" 
                 />
                 {!hasCredits && (
-                  <p className="text-sm text-destructive mt-6">
-                    Insufficient credits. Clicking above will prompt purchase.
+                  <p className="text-center text-sm text-muted-foreground mt-8">
+                    You're out of credits. <button onClick={handlePurchase50} className="text-primary underline hover:text-primary/80">Purchase more</button>
                   </p>
                 )}
               </div>
@@ -271,7 +263,7 @@ const Dashboard = () => {
             </div>
           </TabsContent>
 
-          {/* TAB SHOWCASE */}
+          {/* TAB SHOWCASE : Infinite Scrolling Archive */}
           <TabsContent value="showcase" className="space-y-6 focus-visible:outline-none animate-in fade-in duration-700">
             <div className="flex flex-col md:flex-row gap-4 justify-between items-end md:items-center">
               <div>
@@ -281,18 +273,9 @@ const Dashboard = () => {
               <div className="flex gap-2 w-full md:w-auto">
                 <div className="relative flex-1 md:w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Rechercher..." 
-                    className="pl-9 bg-black/20 border-white/5 focus-visible:ring-1 focus-visible:ring-primary" 
-                    value={showcaseSearch} 
-                    onChange={(e) => setShowcaseSearch(e.target.value)} 
-                  />
+                  <Input placeholder="Rechercher..." className="pl-9 bg-black/20 border-white/5 focus-visible:ring-1 focus-visible:ring-primary" value={showcaseSearch} onChange={(e) => setShowcaseSearch(e.target.value)} />
                 </div>
-                <select 
-                  className="bg-secondary/50 text-sm rounded-md px-3 border border-white/5 focus:ring-1 ring-primary" 
-                  value={showcaseFilter} 
-                  onChange={(e) => setShowcaseFilter(e.target.value)}
-                >
+                <select className="bg-secondary/50 text-sm rounded-md px-3 border border-white/5 focus:ring-1 ring-primary" value={showcaseFilter} onChange={(e) => setShowcaseFilter(e.target.value)}>
                   <option value="all">Tous</option>
                   <option value="vercel">Vercel</option>
                   <option value="lovable">Lovable</option>

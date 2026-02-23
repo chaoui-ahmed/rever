@@ -49,12 +49,12 @@ const Showcase = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground py-12 px-4 flex flex-col items-center relative overflow-hidden">
-      {/* Background glow effect */}
+      {/* Background glow effect for Chrome aesthetic */}
       <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
 
       <div className="relative z-10 flex flex-col items-center mb-12 text-center max-w-3xl mx-auto">
         <Badge variant="outline" className="mb-6 px-4 py-1.5 text-xs tracking-widest uppercase border-white/10 bg-white/5 backdrop-blur-md">
-          Discovery Mode
+          Discovery Archive
         </Badge>
         <h1 className="text-5xl md:text-6xl font-black mb-6 tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white via-white/80 to-white/20">
           Explorateur de Projets
@@ -91,7 +91,6 @@ const Showcase = () => {
             <p className="text-muted-foreground tracking-widest text-sm uppercase">Chargement des pépites en cours...</p>
           </div>
         ) : filteredSites.length > 0 ? (
-          {/* New Infinite Time Machine Component */}
           <SiteTimeMachine sites={filteredSites} />
         ) : (
           <div className="text-center py-32 border border-dashed border-white/10 rounded-3xl bg-card/20 backdrop-blur-sm">
@@ -101,6 +100,19 @@ const Showcase = () => {
           </div>
         )}
       </div>
+
+      {/* Hidden original grid logic preserved for integrity as requested */}
+      {false && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredSites.map((site) => (
+            <Card key={site.domain}>
+              <CardHeader>
+                <CardTitle>{site.domain}</CardTitle>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

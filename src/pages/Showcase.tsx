@@ -11,6 +11,7 @@ interface Site {
   id: number;
   domain: string;
   platform: string;
+  image_url?: string; // Ajoute cette ligne !
 }
 
 // Fonction utilitaire pour mélanger un tableau (Fisher-Yates shuffle)

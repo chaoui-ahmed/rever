@@ -14,6 +14,8 @@ import {
   Globe,
   Search,
   ExternalLink,
+  Sparkles,
+  Terminal
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -40,6 +42,25 @@ const shuffleArray = <T,>(array: T[]): T[] => {
   }
   return newArray;
 };
+
+// --- EXEMPLES STATIQUES POUR MONTRER LE PRODUIT ---
+const VISION_EXAMPLES = [
+  {
+    domain: "linear.app",
+    title: "Productivity Tool",
+    prompt: "A dark-themed workspace dashboard featuring deep blacks, neon purple glowing accents, intricate bento-box grid layouts, and sharp sans-serif typography with subtle metallic borders.",
+  },
+  {
+    domain: "stripe.com",
+    title: "Fintech Landing",
+    prompt: "A modern, trustworthy landing page utilizing dynamic mesh gradients in vibrant colors, crisp typography, complex animated micro-interactions, and a clean, developer-focused aesthetic.",
+  },
+  {
+    domain: "vercel.com",
+    title: "Developer Platform",
+    prompt: "A sleek high-contrast monochrome interface with subtle neon glowing borders, floating terminal windows, minimalist geometric shapes, and a stark futuristic design language.",
+  }
+];
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -82,10 +103,9 @@ const Dashboard = () => {
     setLoadingShowcase(true);
     const { data } = await supabase
       .from("discovered_sites")
-      .select("*"); // Plus de .order(), on prend tout pour randomiser
+      .select("*"); 
       
     if (data) {
-      // On randomise l'ordre des sites récupérés
       setSites(shuffleArray(data));
     }
     setLoadingShowcase(false);
@@ -181,6 +201,11 @@ const Dashboard = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleCopyExample = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    toast.success("Prompt d'exemple copié !");
+  };
+
   const filteredSites = sites.filter(site => {
     const matchesFilter = showcaseFilter === "all" || site.platform === showcaseFilter;
     const matchesSearch = site.domain.toLowerCase().includes(showcaseSearch.toLowerCase());
@@ -270,6 +295,48 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
+
+            {/* --- NOUVELLE SECTION EXEMPLES --- */}
+            {!generatedPrompt && (
+              <div className="w-full max-w-5xl mx-auto pt-20 pb-10">
+                <div className="flex flex-col items-center text-center mb-10 opacity-70">
+                  <Sparkles className="h-5 w-5 text-muted-foreground mb-3" />
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em]">Aperçu des Capacités</h3>
+                  <p className="text-sm text-muted-foreground/60 mt-2 font-light max-w-md">Découvrez le type d'essences architecturales que REVƎЯ peut extraire à partir de simples URLs.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {VISION_EXAMPLES.map((ex, index) => (
+                    <div 
+                      key={index} 
+                      className="group relative flex flex-col p-5 rounded-2xl bg-white/[0.015] border border-white/5 hover:bg-white/[0.03] hover:border-white/10 transition-all duration-500"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-primary/50 group-hover:bg-primary group-hover:shadow-[0_0_10px_rgba(255,255,255,0.5)] transition-all" />
+                          <span className="text-sm font-medium text-white/80">{ex.domain}</span>
+                        </div>
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-white/5 text-muted-foreground/50 uppercase tracking-wider">
+                          {ex.title}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex-1 relative bg-black/40 rounded-xl p-4 border border-white/5 font-mono text-[11px] leading-relaxed text-muted-foreground/70 group-hover:text-muted-foreground transition-colors overflow-hidden">
+                        <Terminal className="absolute top-3 right-3 h-3 w-3 opacity-20" />
+                        "{ex.prompt}"
+                      </div>
+
+                      <button 
+                        onClick={() => handleCopyExample(ex.prompt)}
+                        className="mt-4 w-full py-2 rounded-lg bg-white/[0.02] border border-white/5 text-xs text-muted-foreground/60 hover:bg-white/[0.05] hover:text-white transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0"
+                      >
+                        <Copy className="h-3 w-3" /> Copier l'exemple
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="showcase" className="space-y-6 focus-visible:outline-none animate-in fade-in duration-700">
@@ -300,7 +367,6 @@ const Dashboard = () => {
 
                 <div className="w-full max-w-4xl mx-auto border-t border-white/5 pt-12 pb-20">
                   <div className="flex items-center justify-between mb-8 px-2">
-                    {/* Changement de texte ici pour refléter la randomisation */}
                     <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-40">Index Aléatoire</h3>
                     <span className="text-[10px] font-mono text-muted-foreground/30">{filteredSites.length} domaines répertoriés</span>
                   </div>

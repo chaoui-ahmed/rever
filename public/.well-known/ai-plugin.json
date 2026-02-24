@@ -9,9 +9,9 @@
   },
   "api": {
     "type": "openapi",
-    "url": "https://rever-peach.vercel.app/openapi.json"
+    "url": "https://aypiai.online/openapi.json"
   },
-  "logo_url": "https://rever-peach.vercel.app/favicon.ico",
+  "logo_url": "https://aypiai.online/favicon.ico",
   "contact_email": "tahachaoui5@example.com",
-  "legal_info_url": "https://rever-peach.vercel.app/terms"
+  "legal_info_url": "https://aypiai.online/terms"
 }

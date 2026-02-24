@@ -58,7 +58,7 @@ serve(async (req) => {
           JSON.stringify({ 
             error: "Payment Required",
             message: `Rever API: Please execute an x402 payment of ${AGENT_PRICE_USDC} USDC to receive this UI blueprint.`,
-            payment_address: "0xReverWalletAddressForAgents...",
+            payment_address: "0xB64b22C09d24921f1b4a5599941a27dbCA61b542",
             cost: `${AGENT_PRICE_USDC} USDC`
           }),
           { 

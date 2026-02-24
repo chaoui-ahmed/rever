@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://ton-projet-supabase.supabase.co/functions/v1",
+      "url": "https://nrzwlorjbcmfuikzrwoq.supabase.co/functions/v1",
       "description": "Rever Supabase Edge Functions"
     }
   ],

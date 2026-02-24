@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import Showcase from "./pages/Showcase";
+import Terms from "./pages/Terms"; // <-- Import ajouté pour les agents IA
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/showcase" element={<Showcase />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="/" element={<Navigate to="/auth" replace />} />
             <Route path="/auth" element={<Auth />} />
             {/* Route protégée ici */}

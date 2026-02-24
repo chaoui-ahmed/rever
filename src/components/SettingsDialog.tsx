@@ -12,11 +12,9 @@ import { Label } from "@/components/ui/label";
 import {
   Coins,
   LogOut,
-  ShoppingCart,
-  CreditCard,
   Crown,
-  Check as CheckIcon,
-  Sparkles,
+  Zap,
+  CreditCard
 } from "lucide-react";
 
 interface SettingsDialogProps {
@@ -30,25 +28,22 @@ const SettingsDialog = ({ open, onOpenChange, credits, planName }: SettingsDialo
   const { user, signOut } = useAuth();
   const isPro = planName === "Pro";
 
-  const handlePurchase = (plan: "50" | "500") => {
+  const handlePurchase = (plan: "starter" | "pro" | "pro_plus") => {
     if (!user) return;
+    
+    // 🛑 À CHANGER 🛑 : Remplace ce qui est entre les guillemets par tes vrais liens Stripe
     const urls = {
-      "50": "https://buy.stripe.com/cNi5kCgI4a5XbiWbqsawo00",
-      "500": "https://buy.stripe.com/14A4gy77u91T5YC524awo01",
+      "starter": "https://buy.stripe.com/aFaeVc2Regul0Ei1PSawo02",     // 🛑 À CHANGER 🛑
+      "pro": "https://buy.stripe.com/3cI7sKbnKgul3Qu668awo03",       // 🛑 À CHANGER 🛑
+      "pro_plus": "https://buy.stripe.com/4gM4gy2Re7XPbiW1PSawo04"    // 🛑 À CHANGER 🛑
     };
+
     const params = new URLSearchParams({
       client_reference_id: user.id,
       prefilled_email: user.email ?? "",
     });
     window.location.href = `${urls[plan]}?${params.toString()}`;
   };
-
-  const proBenefits = [
-    "High-quality prompt generation",
-    "50 credits included",
-    "Priority support",
-    "Early access to new features",
-  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -118,72 +113,50 @@ const SettingsDialog = ({ open, onOpenChange, credits, planName }: SettingsDialo
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-foreground">Current Plan</h3>
                   <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                      isPro
-                        ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 ring-1 ring-amber-400/30"
-                        : "bg-muted text-muted-foreground"
-                    }`}
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-muted text-muted-foreground`}
                   >
-                    {isPro && <Crown className="h-3 w-3" />}
                     {planName}
                   </span>
                 </div>
               </div>
-
-              {isPro && (
-                <ul className="space-y-2">
-                  {proBenefits.map((benefit) => (
-                    <li key={benefit} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <CheckIcon className="h-4 w-4 text-primary shrink-0" />
-                      {benefit}
-                    </li>
-                  ))}
-                </ul>
-              )}
             </div>
 
-            {/* Upgrade or buy credits */}
-            {!isPro && (
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-5 space-y-4">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  <h3 className="text-sm font-semibold text-foreground">Upgrade to Pro</h3>
-                </div>
-                <ul className="space-y-2">
-                  {proBenefits.map((benefit) => (
-                    <li key={benefit} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <CheckIcon className="h-4 w-4 text-primary shrink-0" />
-                      {benefit}
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  onClick={() => handlePurchase("500")}
-                  className="w-full gap-2"
-                >
-                  <Crown className="h-4 w-4" />
-                  Upgrade to Pro — 500 Credits
-                </Button>
-              </div>
-            )}
-
+            {/* Buy Credits Section */}
             <div className="space-y-3">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Buy Credits</p>
+              
               <Button
-                onClick={() => handlePurchase("50")}
+                onClick={() => handlePurchase("starter")}
                 variant="outline"
-                className="w-full gap-2 justify-start"
+                className="w-full gap-2 justify-between"
               >
-                <ShoppingCart className="h-4 w-4" />
-                Buy 50 Credits
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  <span>Starter — 1000 Credits</span>
+                </div>
+                <span className="font-semibold text-primary">9,99 €</span>
               </Button>
+
               <Button
-                onClick={() => handlePurchase("500")}
-                variant="outline"
-                className="w-full gap-2 justify-start"
+                onClick={() => handlePurchase("pro")}
+                className="w-full gap-2 justify-between bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900"
               >
-                <CreditCard className="h-4 w-4" />
-                Buy 500 Credits
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4" />
+                  <span>Pro — 1500 Credits</span>
+                </div>
+                <span className="font-semibold">19,99 €</span>
+              </Button>
+
+              <Button
+                onClick={() => handlePurchase("pro_plus")}
+                className="w-full gap-2 justify-between bg-amber-500 hover:bg-amber-600 text-white"
+              >
+                <div className="flex items-center gap-2">
+                  <Crown className="h-4 w-4" />
+                  <span>Pro+ — 5000 Credits</span>
+                </div>
+                <span className="font-semibold">49,99 €</span>
               </Button>
             </div>
           </TabsContent>

@@ -82,7 +82,7 @@ const Dashboard = () => {
     setLoadingShowcase(true);
     const { data } = await supabase
       .from("discovered_sites")
-      .select("*"); // Plus de .order(), on prend tout pour randomiser
+      .select("*"); 
       
     if (data) {
       // On randomise l'ordre des sites récupérés
@@ -154,17 +154,9 @@ const Dashboard = () => {
     }
   };
 
-  const handlePurchase50 = () => {
-    const stripeUrl = import.meta.env.VITE_STRIPE_PAYMENT_URL;
-    if (!stripeUrl) {
-      toast.error("Payment is not configured. Please contact support.");
-      return;
-    }
-    const params = new URLSearchParams({
-      client_reference_id: user?.id ?? "",
-      prefilled_email: user?.email ?? "",
-    });
-    window.location.href = `${stripeUrl}?${params.toString()}`;
+  // Nouvelle fonction qui ouvre les paramètres pour s'abonner au lieu d'acheter des crédits à l'unité
+  const handleUpgrade = () => {
+    setIsSettingsOpen(true);
   };
 
   const handleRefresh = async () => {
@@ -195,7 +187,7 @@ const Dashboard = () => {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                  planName === "Pro" ? "bg-amber-100 text-amber-800 ring-1 ring-amber-400/30" : "bg-muted text-muted-foreground"
+                  planName === "Pro" || planName === "Pro+" ? "bg-amber-100 text-amber-800 ring-1 ring-amber-400/30" : "bg-muted text-muted-foreground"
                 }`}>
                 {planName}
               </span>
@@ -247,12 +239,12 @@ const Dashboard = () => {
               <div className="pt-4 flex flex-col items-center scale-110">
                 <LiquidMetalButton 
                   label={generating ? "Extracting..." : "Generate Prompt"} 
-                  onClick={hasCredits ? handleGenerate : handlePurchase50} 
+                  onClick={hasCredits ? handleGenerate : handleUpgrade} 
                   viewMode="text" 
                 />
                 {!hasCredits && (
                   <p className="text-center text-sm text-muted-foreground mt-8">
-                    You're out of credits. <button onClick={handlePurchase50} className="text-primary underline hover:text-primary/80">Purchase more</button>
+                    You're out of credits. <button onClick={handleUpgrade} className="text-primary underline hover:text-primary/80">Upgrade your plan</button> to get more.
                   </p>
                 )}
               </div>
@@ -300,7 +292,6 @@ const Dashboard = () => {
 
                 <div className="w-full max-w-4xl mx-auto border-t border-white/5 pt-12 pb-20">
                   <div className="flex items-center justify-between mb-8 px-2">
-                    {/* Changement de texte ici pour refléter la randomisation */}
                     <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-40">Index Aléatoire</h3>
                     <span className="text-[10px] font-mono text-muted-foreground/30">{filteredSites.length} domaines répertoriés</span>
                   </div>
@@ -337,6 +328,7 @@ const Dashboard = () => {
         </Tabs>
       </main>
 
+      {/* Cette boîte de dialogue affichera désormais tes abonnements Starter, Pro, Pro+ */}
       <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} credits={credits} planName={planName} />
     </div>
   );

@@ -12,12 +12,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   User,
   Coins,
-  ShoppingCart,
   LogOut,
   CreditCard,
   RefreshCw,
   Settings,
-  LayoutGrid, // L'icône pour le Showcase
+  LayoutGrid,
+  Zap,
+  Crown
 } from "lucide-react";
 
 interface UserMenuProps {
@@ -36,12 +37,16 @@ const UserMenu = ({ credits, refreshing, onRefreshCredits, onOpenSettings, planN
     return email.substring(0, 2).toUpperCase();
   };
 
-  const handlePurchase = (plan: "50" | "500") => {
+  const handlePurchase = (plan: "starter" | "pro" | "pro_plus") => {
     if (!user) return;
+    
+    // 🛑 À CHANGER 🛑 : Remplace ce qui est entre les guillemets par tes vrais liens Stripe
     const urls = {
-      "50": "https://buy.stripe.com/cNi5kCgI4a5XbiWbqsawo00",
-      "500": "https://buy.stripe.com/14A4gy77u91T5YC524awo01",
+      "starter": "https://buy.stripe.com/aFaeVc2Regul0Ei1PSawo02",     // 🛑 À CHANGER 🛑
+      "pro": "https://buy.stripe.com/3cI7sKbnKgul3Qu668awo03",       // 🛑 À CHANGER 🛑
+      "pro_plus": "https://buy.stripe.com/4gM4gy2Re7XPbiW1PSawo04"    // 🛑 À CHANGER 🛑
     };
+    
     const params = new URLSearchParams({
       client_reference_id: user.id,
       prefilled_email: user.email ?? "",
@@ -85,7 +90,6 @@ const UserMenu = ({ credits, refreshing, onRefreshCredits, onOpenSettings, planN
           <span>My Profile</span>
         </DropdownMenuItem>
 
-        {/* NOUVEAU : Lien vers le Showcase */}
         <DropdownMenuItem asChild className="gap-2 cursor-pointer">
           <NavLink to="/showcase">
             <LayoutGrid className="h-4 w-4" />
@@ -122,13 +126,17 @@ const UserMenu = ({ credits, refreshing, onRefreshCredits, onOpenSettings, planN
           </div>
         </div>
 
-        <DropdownMenuItem onClick={() => handlePurchase("50")} className="gap-2 cursor-pointer">
-          <ShoppingCart className="h-4 w-4" />
-          <span>Buy 50 Credits</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handlePurchase("500")} className="gap-2 cursor-pointer">
+        <DropdownMenuItem onClick={() => handlePurchase("starter")} className="gap-2 cursor-pointer">
           <CreditCard className="h-4 w-4" />
-          <span>Buy 500 Credits</span>
+          <span>Starter (1000 Crédits) - 9,99€</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handlePurchase("pro")} className="gap-2 cursor-pointer">
+          <Zap className="h-4 w-4 text-amber-500" />
+          <span>Pro (1500 Crédits) - 19,99€</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handlePurchase("pro_plus")} className="gap-2 cursor-pointer font-medium text-amber-600">
+          <Crown className="h-4 w-4" />
+          <span>Pro+ (5000 Crédits) - 49,99€</span>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />

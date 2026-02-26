@@ -29,7 +29,10 @@
                     "description": "The URL of the website the user wants to clone."
                   }
                 },
-                "required": ["url"]
+                "required": ["url"],
+                "example": {
+                  "url": "https://stripe.com"
+                }
               }
             }
           }

@@ -1,0 +1,13 @@
+{
+  "name": "rever-mcp",
+  "version": "1.0.0",
+  "description": "MCP Server for Rever UI Cloner",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0"
+  }
+}
